@@ -6,6 +6,7 @@ const connectDB = async () => {
       useNewUrlParser: true
     });
     console.log('MongoDB connected');
+    console.log('Database Name:', mongoose.connection.name);
   } catch (error) {
     console.error('MongoDB connection error:', error);
     process.exit(1);
