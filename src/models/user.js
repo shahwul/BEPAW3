@@ -12,7 +12,10 @@ const UserSchema = new mongoose.Schema({
     type: String, 
     enum: ["admin", "alumni", "mahasiswa", "guest"], 
     default: "guest" 
-  }
+  },
+  otp: { type: String },
+  otpExpiry: { type: Date },
+  isVerified: { type: Boolean, default: false }
 });
 
 module.exports = mongoose.model("User", UserSchema);

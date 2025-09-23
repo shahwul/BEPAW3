@@ -1,11 +1,19 @@
 const express = require("express");
 const passport = require("passport");
-const { register, login } = require("../controllers/authController");
+const { 
+  register, 
+  sendOTP, 
+  verifyOTP, 
+  login 
+} = require("../controllers/authController");
 const jwt = require("jsonwebtoken");
 
 const router = express.Router();
 
+// OTP-based authentication
 router.post("/register", register);
+router.post("/send-otp", sendOTP);
+router.post("/verify-otp", verifyOTP);
 router.post("/login", login);
 
 // Google OAuth
