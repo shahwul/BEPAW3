@@ -1,8 +1,8 @@
 const otpService = require("../services/otpService");
 const refreshTokenService = require("../services/refreshTokenService");
+const { setAuthCookies, clearAuthCookies } = require("../utils/cookieUtils");
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 
 // Register dengan OTP
 const register = async (req, res) => {
@@ -133,13 +133,24 @@ const verifyOTP = async (req, res) => {
     user.refreshTokenExpiry = tokens.refreshTokenExpiry;
     await user.save();
 
-    // Create response
-    const response = refreshTokenService.createTokenResponse(user, tokens);
-    
-    res.json({
+    // Set authentication cookies
+    setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+
+    // Create response (without tokens for security)
+    const response = {
       message: "OTP berhasil diverifikasi dan login otomatis",
-      ...response
-    });
+      tokenType: 'Bearer',
+      expiresIn: tokens.expiresIn,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified
+      }
+    };
+    
+    res.json(response);
 
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -175,13 +186,24 @@ const login = async (req, res) => {
     user.refreshTokenExpiry = tokens.refreshTokenExpiry;
     await user.save();
 
-    // Create response
-    const response = refreshTokenService.createTokenResponse(user, tokens);
+    // Set authentication cookies
+    setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
 
-    res.json({
+    // Create response (without tokens for security)
+    const response = {
       message: "Login berhasil",
-      ...response
-    });
+      tokenType: 'Bearer',
+      expiresIn: tokens.expiresIn,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified
+      }
+    };
+
+    res.json(response);
 
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -191,19 +213,20 @@ const login = async (req, res) => {
 // Refresh access token
 const refreshToken = async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    // Try to get refresh token from cookie first, then from body
+    const refreshTokenValue = req.cookies.refreshToken || req.body.refreshToken;
 
-    if (!refreshToken) {
+    if (!refreshTokenValue) {
       return res.status(400).json({ message: "Refresh token diperlukan" });
     }
 
     // Verify refresh token
-    const decoded = refreshTokenService.verifyRefreshToken(refreshToken);
+    const decoded = refreshTokenService.verifyRefreshToken(refreshTokenValue);
 
     // Find user with this refresh token
     const user = await User.findOne({ 
       _id: decoded.id,
-      refreshToken: refreshToken
+      refreshToken: refreshTokenValue
     });
 
     if (!user) {
@@ -230,13 +253,24 @@ const refreshToken = async (req, res) => {
     user.refreshTokenExpiry = tokens.refreshTokenExpiry;
     await user.save();
 
-    // Create response
-    const response = refreshTokenService.createTokenResponse(user, tokens);
+    // Set new authentication cookies
+    setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
 
-    res.json({
+    // Create response (without tokens for security)
+    const response = {
       message: "Token berhasil di-refresh",
-      ...response
-    });
+      tokenType: 'Bearer',
+      expiresIn: tokens.expiresIn,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified
+      }
+    };
+
+    res.json(response);
 
   } catch (err) {
     res.status(401).json({ message: "Refresh token tidak valid" });
@@ -246,12 +280,13 @@ const refreshToken = async (req, res) => {
 // Logout - invalidate refresh token
 const logout = async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    // Get refresh token from cookie or body
+    const refreshTokenValue = req.cookies.refreshToken || req.body.refreshToken;
     
-    if (refreshToken) {
+    if (refreshTokenValue) {
       // Find and clear refresh token
       await User.findOneAndUpdate(
-        { refreshToken: refreshToken },
+        { refreshToken: refreshTokenValue },
         { 
           $unset: { 
             refreshToken: 1, 
@@ -260,6 +295,9 @@ const logout = async (req, res) => {
         }
       );
     }
+
+    // Clear authentication cookies
+    clearAuthCookies(res);
 
     res.json({ message: "Logout berhasil" });
 

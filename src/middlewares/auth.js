@@ -2,13 +2,18 @@ const jwt = require("jsonwebtoken");
 const refreshTokenService = require("../services/refreshTokenService");
 
 const verifyToken = (req, res, next) => {
+  // Try to get token from Authorization header first, then from cookie
   const authHeader = req.header("Authorization");
-  const token = authHeader && authHeader.split(" ")[1];
+  const headerToken = authHeader && authHeader.split(" ")[1];
+  const cookieToken = req.cookies && req.cookies.accessToken;
+  
+  const token = headerToken || cookieToken;
   
   if (!token) {
     return res.status(401).json({ 
       message: "Access token diperlukan",
-      code: "NO_TOKEN"
+      code: "NO_TOKEN",
+      hint: "Sertakan token di Authorization header atau login untuk set cookie"
     });
   }
 
