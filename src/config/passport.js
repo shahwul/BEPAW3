@@ -16,8 +16,8 @@ passport.use(
 
         if (!user) {
           let role = "guest";
-          if (email.endsWith("@ugm.ac.id")) role = "admin";
-          else if (email.endsWith("@mail.ugm.ac.id")) role = "mahasiswa";
+          // Hilangkan auto admin untuk domain @ugm.ac.id
+          if (email.endsWith("@mail.ugm.ac.id")) role = "mahasiswa";
 
           user = new User({
             googleId: profile.id,

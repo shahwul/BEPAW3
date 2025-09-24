@@ -78,5 +78,6 @@ const verifyTokenWithAutoRefresh = (req, res, next) => {
   }
 };
 
+// Export dengan benar - verifyToken sebagai default export
 module.exports = verifyToken;
 module.exports.verifyTokenWithAutoRefresh = verifyTokenWithAutoRefresh;

@@ -7,7 +7,7 @@ const bcrypt = require("bcryptjs");
 // Register dengan OTP
 const register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body; // Hilangkan role dari request body
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -22,12 +22,18 @@ const register = async (req, res) => {
     const otp = otpService.generateOTP();
     const otpExpiry = otpService.generateOTPExpiry();
 
+    // Tentukan role berdasarkan domain email (konsisten dengan Google OAuth)
+    let role = "guest";
+    if (email.endsWith("@mail.ugm.ac.id")) {
+      role = "mahasiswa";
+    }
+
     // Create user (not verified yet)
     const user = new User({
       name,
       email,
       password: hashedPassword,
-      role: role || "guest",
+      role: role, // Role berdasarkan domain email
       otp,
       otpExpiry,
       isVerified: false
