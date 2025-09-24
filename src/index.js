@@ -7,6 +7,7 @@ const passport = require('passport');
 require('./config/passport');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const capstoneRoutes = require('./routes/capstoneRoutes');
 
 // Initialize Express app
 const app = express();
@@ -26,6 +27,7 @@ app.use(passport.initialize());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/capstones', capstoneRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 3000; 
