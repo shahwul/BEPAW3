@@ -20,3 +20,7 @@ exports.getAllUsers = async () => {
 exports.getUserById = async (userId) => {
   return User.findById(userId);
 };
+
+exports.deleteUser = async (userId) => {
+  return User.findByIdAndDelete(userId);
+};
