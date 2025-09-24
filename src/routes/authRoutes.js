@@ -4,7 +4,9 @@ const {
   register, 
   sendOTP, 
   verifyOTP, 
-  login 
+  login,
+  refreshToken,
+  logout 
 } = require("../controllers/authController");
 const jwt = require("jsonwebtoken");
 
@@ -15,6 +17,10 @@ router.post("/register", register);
 router.post("/send-otp", sendOTP);
 router.post("/verify-otp", verifyOTP);
 router.post("/login", login);
+
+// Token management
+router.post("/refresh", refreshToken);
+router.post("/logout", logout);
 
 // Google OAuth
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));

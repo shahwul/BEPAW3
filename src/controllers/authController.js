@@ -1,4 +1,5 @@
 const otpService = require("../services/otpService");
+const refreshTokenService = require("../services/refreshTokenService");
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -123,25 +124,21 @@ const verifyOTP = async (req, res) => {
     user.isVerified = true;
     user.otp = undefined;
     user.otpExpiry = undefined;
+
+    // Generate token pair (access + refresh)
+    const tokens = refreshTokenService.generateTokenPair(user);
+    
+    // Save refresh token to user
+    user.refreshToken = tokens.refreshToken;
+    user.refreshTokenExpiry = tokens.refreshTokenExpiry;
     await user.save();
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "24h" }
-    );
-
+    // Create response
+    const response = refreshTokenService.createTokenResponse(user, tokens);
+    
     res.json({
-      message: "OTP berhasil diverifikasi",
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isVerified: user.isVerified
-      }
+      message: "OTP berhasil diverifikasi dan login otomatis",
+      ...response
     });
 
   } catch (err) {
@@ -169,26 +166,102 @@ const login = async (req, res) => {
     // Clear OTP after successful verification
     user.otp = undefined;
     user.otpExpiry = undefined;
+
+    // Generate token pair (access + refresh)
+    const tokens = refreshTokenService.generateTokenPair(user);
+    
+    // Save refresh token to user
+    user.refreshToken = tokens.refreshToken;
+    user.refreshTokenExpiry = tokens.refreshTokenExpiry;
     await user.save();
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "24h" }
-    );
+    // Create response
+    const response = refreshTokenService.createTokenResponse(user, tokens);
 
     res.json({
       message: "Login berhasil",
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isVerified: user.isVerified
-      }
+      ...response
     });
+
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+// Refresh access token
+const refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({ message: "Refresh token diperlukan" });
+    }
+
+    // Verify refresh token
+    const decoded = refreshTokenService.verifyRefreshToken(refreshToken);
+
+    // Find user with this refresh token
+    const user = await User.findOne({ 
+      _id: decoded.id,
+      refreshToken: refreshToken
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: "Refresh token tidak valid" });
+    }
+
+    // Check if refresh token expired
+    if (refreshTokenService.isRefreshTokenExpired(user.refreshTokenExpiry)) {
+      // Clear expired refresh token
+      user.refreshToken = undefined;
+      user.refreshTokenExpiry = undefined;
+      await user.save();
+      
+      return res.status(401).json({ 
+        message: "Refresh token sudah expired. Silakan login ulang." 
+      });
+    }
+
+    // Generate new token pair
+    const tokens = refreshTokenService.generateTokenPair(user);
+    
+    // Update refresh token in database
+    user.refreshToken = tokens.refreshToken;
+    user.refreshTokenExpiry = tokens.refreshTokenExpiry;
+    await user.save();
+
+    // Create response
+    const response = refreshTokenService.createTokenResponse(user, tokens);
+
+    res.json({
+      message: "Token berhasil di-refresh",
+      ...response
+    });
+
+  } catch (err) {
+    res.status(401).json({ message: "Refresh token tidak valid" });
+  }
+};
+
+// Logout - invalidate refresh token
+const logout = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    
+    if (refreshToken) {
+      // Find and clear refresh token
+      await User.findOneAndUpdate(
+        { refreshToken: refreshToken },
+        { 
+          $unset: { 
+            refreshToken: 1, 
+            refreshTokenExpiry: 1 
+          } 
+        }
+      );
+    }
+
+    res.json({ message: "Logout berhasil" });
 
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -199,5 +272,7 @@ module.exports = {
   register, 
   sendOTP, 
   verifyOTP, 
-  login 
+  login,
+  refreshToken,
+  logout 
 };
