@@ -1,4 +1,3 @@
-const jwt = require("jsonwebtoken");
 const refreshTokenService = require("../services/refreshTokenService");
 
 const verifyToken = (req, res, next) => {
