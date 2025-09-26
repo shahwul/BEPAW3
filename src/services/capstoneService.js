@@ -137,3 +137,26 @@ exports.searchCapstones = async (query) => {
 
     return await Capstone.find(filter).populate("alumni", "name email");
 };
+
+exports.deleteCapstone = async (capstoneId) => {
+  const capstone = await Capstone.findById(capstoneId);
+  if (!capstone) throw new Error("Capstone not found");
+
+  // Delete associated file from Google Drive if exists
+  if (capstone.proposalFileId) {
+    try {
+      await drive.files.delete({ 
+        fileId: capstone.proposalFileId,
+        supportsAllDrives: true,
+        supportsTeamDrives: true
+      });
+    } catch (error) {
+      console.error("Error deleting file from Google Drive:", error);
+      // Continue with capstone deletion even if file deletion fails
+    }
+  }
+
+  // Delete capstone from database
+  const deletedCapstone = await Capstone.findByIdAndDelete(capstoneId);
+  return deletedCapstone;
+};

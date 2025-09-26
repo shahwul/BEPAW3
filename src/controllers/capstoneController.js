@@ -83,3 +83,26 @@ exports.searchCapstones = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+exports.deleteCapstone = async (req, res) => {
+  try {
+    const capstoneId = req.params.id;
+    
+    // Check if capstone exists
+    const existingCapstone = await capstoneService.getCapstoneDetail(capstoneId);
+    if (!existingCapstone) {
+      return res.status(404).json({ message: "Capstone not found" });
+    }
+
+    // Check authorization: only the owner (alumni) or admin can delete
+    if (req.user.role !== "admin" && existingCapstone.alumni._id.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not authorized to delete this capstone" });
+    }
+
+    // Delete capstone
+    const deletedCapstone = await capstoneService.deleteCapstone(capstoneId);
+    res.json({ message: "Capstone deleted successfully", capstone: deletedCapstone });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};

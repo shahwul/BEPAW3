@@ -1,5 +1,25 @@
 # 📋 API Endpoints - BEPAW3 System
 
+## 🎯 System Overview
+
+**BEPAW3** adalah sistem manajemen capstone project yang menyediakan:
+- **Authentication & User Management** (8 auth endpoints, 3 user endpoints)
+- **Capstone Project Management** (7 capstone endpoints dengan file upload)
+- **Group Management** (4 group endpoints untuk kolaborasi mahasiswa)  
+- **Review System** (2 review endpoints untuk persetujuan alumni)
+
+**Total: 24 API Endpoints** dengan role-based access control dan Google Drive integration.
+
+### ✨ **Key Features:**
+- 🔐 **OTP-based Authentication** with Google OAuth support
+- 📁 **Google Drive Integration** with Shared Drive compatibility  
+- 👥 **Group Management** with role-based access control
+- ⭐ **Review System** with detailed group information
+- 🔍 **Advanced Search** and filtering capabilities
+- 🚀 **Memory-based File Upload** for optimal performance
+
+---
+
 ## 🔐 Authentication Endpoints
 **Base URL:** `/api/auth`
 
@@ -36,8 +56,31 @@
 | `GET` | `/` | Mendapatkan semua capstone | ✅ | Any role |
 | `GET` | `/:id` | Mendapatkan detail capstone | ✅ | Any role |
 | `PUT` | `/:id` | Update capstone dengan optional proposal file | ✅ | `alumni`, `admin` |
+| `DELETE` | `/:id` | Delete capstone | ✅ | `alumni`, `admin` |
 | `GET` | `/:id/proposal` | Mendapatkan link proposal (admin only) | ✅ | `admin` |
 | `GET` | `/search` | Search capstone berdasarkan judul dan kategori | ✅ | Any role |
+
+---
+
+## 👥 Group Management Endpoints
+**Base URL:** `/api/groups`
+
+| Method | Endpoint | Description | Auth Required | Role Required |
+|--------|----------|-------------|---------------|---------------|
+| `POST` | `/` | Create group baru | ✅ | `admin` |
+| `DELETE` | `/:id` | Delete group | ✅ | `admin` |
+| `POST` | `/:id/pilih` | Pilih capstone untuk group | ✅ | `mahasiswa` (ketua) |
+| `GET` | `/:id` | Get group detail | ✅ | Group members |
+
+---
+
+## ⭐ Review Management Endpoints  
+**Base URL:** `/api/reviews`
+
+| Method | Endpoint | Description | Auth Required | Role Required |
+|--------|----------|-------------|---------------|---------------|
+| `GET` | `/pending` | Get pending group reviews for alumni's capstones | ✅ | `alumni` |
+| `POST` | `/:id` | Review group capstone selection | ✅ | `alumni` |
 
 ---
 
@@ -299,6 +342,342 @@ Authorization: Bearer <access-token>
 - Category search is exact match
 - Both parameters can be combined for refined search
 - Returns array of matching capstones with alumni details
+
+---
+
+#### 7. Delete Capstone (Alumni/Admin Only)
+
+```http
+DELETE /api/capstones/:id
+```
+
+**Headers:**
+```
+Authorization: Bearer <access-token>
+```
+
+**Response (200):**
+```json
+{
+  "message": "Capstone deleted successfully",
+  "capstone": {
+    "_id": "64f7b1234567890abcdef123",
+    "judul": "Sistem Manajemen Perpustakaan Digital",
+    "kategori": "Web Development",
+    "deskripsi": "Aplikasi web untuk mengelola buku dan peminjaman perpustakaan",
+    "alumni": "64f7b1234567890abcdef456",
+    "status": "Tersedia",
+    "proposalFileId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+    "createdAt": "2024-09-24T10:30:00.000Z",
+    "updatedAt": "2024-09-24T10:30:00.000Z"
+  }
+}
+```
+
+**Notes:**
+- Alumni can only delete their own capstone
+- Admin can delete any capstone
+- Associated Google Drive file is automatically deleted if exists
+- Capstone is permanently removed from database
+- If Google Drive file deletion fails, capstone deletion continues
+
+---
+
+## 👥 Group Management Detailed Endpoints
+
+#### 1. Create Group (Admin Only)
+
+```http
+POST /api/groups
+```
+
+**Headers:**
+```
+Authorization: Bearer <access-token>
+```
+
+**Request Body:**
+```json
+{
+  "namaKelompok": "Kelompok Sistem Informasi",
+  "ketua": "64f7b1234567890abcdef123",
+  "anggota": ["64f7b1234567890abcdef456", "64f7b1234567890abcdef789"]
+}
+```
+
+**Response (201):**
+```json
+{
+  "_id": "64f7b1234567890abcdef999",
+  "namaKelompok": "Kelompok Sistem Informasi",
+  "ketua": "64f7b1234567890abcdef123",
+  "anggota": [
+    "64f7b1234567890abcdef123",
+    "64f7b1234567890abcdef456", 
+    "64f7b1234567890abcdef789"
+  ],
+  "status": "Menunggu Persetujuan",
+  "createdAt": "2024-09-24T10:30:00.000Z",
+  "updatedAt": "2024-09-24T10:30:00.000Z"
+}
+```
+
+**Notes:**
+- Only admin can create groups
+- Ketua automatically included in anggota array
+- Default status is "Menunggu Persetujuan"
+
+---
+
+#### 2. Delete Group (Admin Only)
+
+```http
+DELETE /api/groups/:id
+```
+
+**Headers:**
+```
+Authorization: Bearer <access-token>
+```
+
+**Response (200):**
+```json
+{
+  "message": "Group deleted successfully",
+  "group": {
+    "_id": "64f7b1234567890abcdef999",
+    "namaKelompok": "Kelompok Sistem Informasi",
+    "ketua": "64f7b1234567890abcdef123",
+    "anggota": ["64f7b1234567890abcdef123", "64f7b1234567890abcdef456"],
+    "status": "Menunggu Persetujuan"
+  }
+}
+```
+
+**Notes:**
+- Only admin can delete groups
+- Permanently removes group from database
+
+---
+
+#### 3. Choose Capstone (Group Leader Only)
+
+```http
+POST /api/groups/:id/pilih
+```
+
+**Headers:**
+```
+Authorization: Bearer <access-token>
+```
+
+**Request Body:**
+```json
+{
+  "capstoneId": "64f7b1234567890abcdef111"
+}
+```
+
+**Response (200):**
+```json
+{
+  "message": "Capstone chosen",
+  "group": {
+    "_id": "64f7b1234567890abcdef999",
+    "namaKelompok": "Kelompok Sistem Informasi",
+    "ketua": "64f7b1234567890abcdef123",
+    "anggota": ["64f7b1234567890abcdef123", "64f7b1234567890abcdef456"],
+    "capstoneDipilih": "64f7b1234567890abcdef111",
+    "status": "Menunggu Persetujuan",
+    "createdAt": "2024-09-24T10:30:00.000Z",
+    "updatedAt": "2024-09-24T11:30:00.000Z"
+  }
+}
+```
+
+**Notes:**
+- Only group leader (ketua) can choose capstone
+- Requires mahasiswa role
+- Sets status to "Menunggu Persetujuan"
+
+---
+
+#### 4. Get Group Detail (Group Members Only)
+
+```http
+GET /api/groups/:id
+```
+
+**Headers:**
+```
+Authorization: Bearer <access-token>
+```
+
+**Response (200):**
+```json
+{
+  "_id": "64f7b1234567890abcdef999",
+  "namaKelompok": "Kelompok Sistem Informasi",
+  "ketua": {
+    "_id": "64f7b1234567890abcdef123",
+    "name": "John Doe",
+    "email": "john@mail.ugm.ac.id"
+  },
+  "anggota": [
+    {
+      "_id": "64f7b1234567890abcdef123",
+      "name": "John Doe",
+      "email": "john@mail.ugm.ac.id"
+    },
+    {
+      "_id": "64f7b1234567890abcdef456",
+      "name": "Jane Smith", 
+      "email": "jane@mail.ugm.ac.id"
+    }
+  ],
+  "capstoneDipilih": {
+    "_id": "64f7b1234567890abcdef111",
+    "judul": "Sistem Manajemen Perpustakaan Digital",
+    "kategori": "Web Development"
+  },
+  "status": "Disetujui",
+  "createdAt": "2024-09-24T10:30:00.000Z",
+  "updatedAt": "2024-09-24T12:30:00.000Z"
+}
+```
+
+**Notes:**
+- Only group members can view group details
+- Returns populated data for ketua, anggota, and capstoneDipilih
+- Access controlled by isAnggota middleware
+
+---
+
+## ⭐ Review Management Detailed Endpoints
+
+#### 1. Get Pending Reviews (Alumni Only)
+
+```http
+GET /api/reviews/pending
+```
+
+**Headers:**
+```
+Authorization: Bearer <access-token>
+```
+
+**Response (200):**
+```json
+{
+  "message": "Pending group reviews for your capstones",
+  "pendingGroups": [
+    {
+      "_id": "64f7b1234567890abcdef999",
+      "namaKelompok": "Kelompok Sistem Informasi A",
+      "ketua": {
+        "_id": "64f7b1234567890abcdef123",
+        "name": "John Doe",
+        "email": "john@mail.ugm.ac.id"
+      },
+      "anggota": [
+        {
+          "_id": "64f7b1234567890abcdef123",
+          "name": "John Doe",
+          "email": "john@mail.ugm.ac.id"
+        },
+        {
+          "_id": "64f7b1234567890abcdef456",
+          "name": "Jane Smith",
+          "email": "jane@mail.ugm.ac.id"
+        }
+      ],
+      "capstoneDipilih": {
+        "_id": "64f7b1234567890abcdef111",
+        "judul": "Machine Learning untuk Prediksi Cuaca",
+        "kategori": "AI",
+        "deskripsi": "Sistem prediksi cuaca menggunakan neural network"
+      },
+      "status": "Menunggu Persetujuan",
+      "createdAt": "2024-09-24T10:30:00.000Z",
+      "updatedAt": "2024-09-24T11:30:00.000Z"
+    }
+  ],
+  "count": 1
+}
+```
+
+**Notes:**
+- Returns groups that selected alumni's capstones and awaiting approval
+- Shows detailed information about group members and selected capstone
+- Only alumni can access this endpoint
+- Filters by alumni's own capstone projects
+
+---
+
+#### 2. Review Group Capstone Selection (Alumni Only)
+
+```http
+POST /api/reviews/:id
+```
+
+**Headers:**
+```
+Authorization: Bearer <access-token>
+```
+
+**Request Body:**
+```json
+{
+  "status": "Disetujui"
+}
+```
+
+**Response (200):**
+```json
+{
+  "message": "Group disetujui",
+  "group": {
+    "_id": "64f7b1234567890abcdef999",
+    "namaKelompok": "Kelompok Sistem Informasi A",
+    "ketua": {
+      "_id": "64f7b1234567890abcdef123",
+      "name": "John Doe",
+      "email": "john@mail.ugm.ac.id"
+    },
+    "anggota": [
+      {
+        "_id": "64f7b1234567890abcdef123",
+        "name": "John Doe",
+        "email": "john@mail.ugm.ac.id"
+      },
+      {
+        "_id": "64f7b1234567890abcdef456",
+        "name": "Jane Smith",
+        "email": "jane@mail.ugm.ac.id"
+      }
+    ],
+    "capstoneDipilih": {
+      "_id": "64f7b1234567890abcdef111",
+      "judul": "Machine Learning untuk Prediksi Cuaca",
+      "kategori": "AI",
+      "deskripsi": "Sistem prediksi cuaca menggunakan neural network"
+    },
+    "status": "Disetujui",
+    "createdAt": "2024-09-24T10:30:00.000Z",
+    "updatedAt": "2024-09-24T13:30:00.000Z"
+  }
+}
+```
+
+**Status Options:**
+- `"Disetujui"` - Approve the group's capstone selection
+- `"Ditolak"` - Reject the group's capstone selection
+
+**Notes:**
+- Alumni can only review applications for their own capstone projects
+- Shows complete group details including member names and selected capstone
+- Updates group status and returns populated data
+- Validates that group has selected a capstone before review
 
 ---
 
@@ -658,9 +1037,9 @@ fetch('/api/users', {
 
 | Role | Permissions |
 |------|-------------|
-| `admin` | Full access to all endpoints, can view proposal files, manage users |
-| `alumni` | Can create capstone projects with proposal uploads, view all capstones |
-| `mahasiswa` | Can view capstone projects (student access) |
+| `admin` | Full access to all endpoints, can view proposal files, manage users, create/delete groups |
+| `alumni` | Can create capstone projects with proposal uploads, view all capstones, review group selections |
+| `mahasiswa` | Can view capstone projects, group leaders can choose capstones for their groups |
 | `guest` | Basic access to view capstone projects |
 
 ### Role Assignment Rules
@@ -673,8 +1052,22 @@ fetch('/api/users', {
 - **Admin role**: Only assignable by existing admin via API
 - **Alumni role**: Manually assigned by admin for graduated students
 
-### Capstone Access Permissions
-- **Alumni**: Can upload new capstone proposals (limit: 1 per alumni)
+### Access Permissions by Feature
+
+#### Capstone Management
+- **Alumni**: Can upload new capstone proposals (limit: 1 per alumni), update/delete own capstones
+- **Admin**: Can view all capstone details including proposal files, update/delete any capstone
+- **All logged users**: Can view capstone list and basic details (no proposal access), can search capstones
+
+#### Group Management  
+- **Admin**: Can create and delete groups
+- **Group Leader (mahasiswa)**: Can choose capstones for their group
+- **Group Members**: Can view their group details
+- **Non-members**: Cannot access group information
+
+#### Review System
+- **Alumni**: Can review and approve/reject group capstone selections
+- **Other roles**: Cannot perform reviews
 - **Admin**: Can view all capstone details including proposal files
 - **All logged users**: Can view capstone list and basic details (no proposal access)
 
@@ -852,6 +1245,122 @@ fetch(`/api/capstones/search?${searchParams}`, {
   results.forEach(capstone => {
     console.log(`Found: ${capstone.judul} - ${capstone.kategori}`);
   });
+})
+.catch(error => console.error('Error:', error));
+```
+
+#### Delete Capstone (JavaScript)
+```javascript
+// Delete capstone (alumni can only delete own, admin can delete any)
+fetch(`/api/capstones/${capstoneId}`, {
+  method: 'DELETE',
+  headers: {
+    'Authorization': 'Bearer ' + accessToken
+  }
+})
+.then(response => response.json())
+.then(data => {
+  console.log('Delete result:', data.message);
+  console.log('Deleted capstone:', data.capstone);
+  // Update UI - remove capstone from list
+  // Also handles automatic Google Drive file cleanup
+})
+.catch(error => console.error('Error:', error));
+```
+
+#### Create Group (JavaScript - Admin Only)
+```javascript
+// Create new group (admin only)
+const groupData = {
+  namaKelompok: 'Kelompok Sistem Informasi',
+  ketua: 'userId123',
+  anggota: ['userId456', 'userId789']
+};
+
+fetch('/api/groups', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer ' + adminAccessToken,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(groupData)
+})
+.then(response => response.json())
+.then(group => {
+  console.log('Group created:', group);
+  // Update UI with new group
+})
+.catch(error => console.error('Error:', error));
+```
+
+#### Choose Capstone (JavaScript - Group Leader)
+```javascript
+// Group leader chooses capstone for their group
+fetch(`/api/groups/${groupId}/pilih`, {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer ' + ketuaAccessToken,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    capstoneId: 'capstone123'
+  })
+})
+.then(response => response.json())
+.then(data => {
+  console.log('Capstone chosen:', data.message);
+  console.log('Updated group:', data.group);
+  // Update UI to show selected capstone
+})
+.catch(error => console.error('Error:', error));
+```
+
+#### Get Pending Reviews (JavaScript - Alumni)
+```javascript
+// Alumni gets list of groups awaiting review for their capstones
+fetch('/api/reviews/pending', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer ' + alumniAccessToken
+  }
+})
+.then(response => response.json())
+.then(data => {
+  console.log('Pending reviews:', data.message);
+  console.log('Total pending:', data.count);
+  
+  // Display each pending group with full details
+  data.pendingGroups.forEach(group => {
+    console.log(`Group: ${group.namaKelompok}`);
+    console.log(`Leader: ${group.ketua.name} (${group.ketua.email})`);
+    console.log(`Capstone: ${group.capstoneDipilih.judul}`);
+    console.log(`Members: ${group.anggota.map(m => m.name).join(', ')}`);
+  });
+})
+.catch(error => console.error('Error:', error));
+```
+
+#### Review Group Selection (JavaScript - Alumni)
+```javascript
+// Alumni reviews group's capstone selection with enhanced validation
+fetch(`/api/reviews/${groupId}`, {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer ' + alumniAccessToken,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    status: 'Disetujui' // or 'Ditolak'
+  })
+})
+.then(response => response.json())
+.then(data => {
+  console.log('Review result:', data.message);
+  console.log('Updated group:', data.group);
+  console.log('Final status:', data.group.status);
+  console.log('Group members:', data.group.anggota.map(m => m.name).join(', '));
+  console.log('Selected capstone:', data.group.capstoneDipilih.judul);
+  // Update UI with detailed group information
 })
 .catch(error => console.error('Error:', error));
 ```

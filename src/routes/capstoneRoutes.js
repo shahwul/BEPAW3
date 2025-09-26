@@ -14,10 +14,11 @@ const upload = multer({
 const router = express.Router();
 
 router.post("/", auth, role(["alumni", "admin"]), upload.single("proposal"), capstoneController.createCapstone);
+router.get("/search", auth, capstoneController.searchCapstones);
 router.get("/", auth, capstoneController.getAllCapstones);
 router.get("/:id", auth, capstoneController.getCapstoneDetail);
 router.put("/:id", auth, role(["alumni", "admin"]), upload.single("proposal"), capstoneController.updateCapstone);
 router.get("/:id/proposal", auth, role(["admin"]), capstoneController.getProposalLink);
-router.get("/search", auth, capstoneController.searchCapstones);
+router.delete("/:id", auth, role(["alumni", "admin"]), capstoneController.deleteCapstone);
 
 module.exports = router;
