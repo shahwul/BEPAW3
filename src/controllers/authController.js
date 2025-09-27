@@ -163,30 +163,25 @@ const verifyOTP = async (req, res) => {
   }
 };
 
-// Login dengan OTP
+// Login dengan password
 const login = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { email, password } = req.body;
 
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "Email tidak ditemukan" });
     }
 
-    // Verify OTP
-    const otpVerification = otpService.verifyOTP(otp, user.otp, user.otpExpiry);
-    
-    if (!otpVerification.valid) {
-      return res.status(400).json({ message: otpVerification.message });
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(400).json({ message: "Password salah" });
     }
-
-    // Clear OTP after successful verification
-    user.otp = undefined;
-    user.otpExpiry = undefined;
 
     // Generate token pair (access + refresh)
     const tokens = refreshTokenService.generateTokenPair(user);
-    
+
     // Save refresh token to user
     user.refreshToken = tokens.refreshToken;
     user.refreshTokenExpiry = tokens.refreshTokenExpiry;

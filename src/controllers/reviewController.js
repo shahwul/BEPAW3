@@ -8,7 +8,7 @@ exports.reviewGroup = async (req, res) => {
       req.user.id // Alumni ID
     );
     res.json({ 
-      message: `Group ${req.body.status.toLowerCase()}`, 
+      message: `Group ${req.body.status.toLowerCase()}`,
       group 
     });
   } catch (err) {
