@@ -28,7 +28,7 @@
 | `POST` | `/register` | Register user baru dengan OTP verification | ❌ | - |
 | `POST` | `/send-otp` | Request OTP untuk login (setelah password valid) | ❌ | - |
 | `POST` | `/verify-otp` | Verifikasi OTP setelah register (auto login) | ❌ | - |
-| `POST` | `/login` | Login dengan email dan OTP | ❌ | - |
+| `POST` | `/login` | Login dengan email dan password | ❌ | - |
 | `POST` | `/refresh` | Refresh access token menggunakan refresh token | ❌ | - |
 | `POST` | `/logout` | Logout dan invalidate refresh token | ❌ | - |
 | `GET` | `/google` | Google OAuth login redirect | ❌ | - |
@@ -168,7 +168,7 @@ POST /api/auth/verify-otp
 
 ---
 
-#### 4. Login with OTP
+#### 4. Login with Password
 ```
 POST /api/auth/login
 ```
@@ -176,7 +176,7 @@ POST /api/auth/login
 ```json
 {
   "email": "john@example.com",
-  "otp": "123456"
+  "password": "password123"
 }
 ```
 **Response (200):**
