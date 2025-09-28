@@ -50,7 +50,7 @@ exports.reviewGroup = async (requestId, status, alumniId) => {
   // Kirim notifikasi ke ketua kelompok tentang hasil review
   await notificationService.createNotification({
     userId: request.group.ketua._id,
-    type: "CAPSTONE_REVIEW",
+    type: status === "Diterima" ? "capstone_terima" : "capstone_tolak",
     message: `Kelompok Anda telah direview dan statusnya: ${status}.`,
     data: { groupId: request.group._id, status }
   });
@@ -88,5 +88,9 @@ exports.getPendingGroupsForAlumni = async (alumniId) => {
   }).populate("capstone", "judul kategori deskripsi");
 
   // Ambil group dari request
-  return requests.map(req => req.group);
+    // Ambil group + request id
+  return requests.map(req => ({
+    requestId: req._id,
+    group: req.group
+  }));
 };

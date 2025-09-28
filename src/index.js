@@ -10,6 +10,7 @@ const userRoutes = require('./routes/userRoutes');
 const capstoneRoutes = require('./routes/capstoneRoutes');
 const groupRoutes = require('./routes/groupRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // Initialize Express app
 const app = express();
@@ -32,6 +33,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/capstones', capstoneRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 3000; 
