@@ -29,6 +29,20 @@
 
 ## 🔐 Authentication Endpoints
 
+### 📋 **Authentication API Endpoints**
+
+| **Method** | **Endpoint** | **Description** | **Auth Required** | **Role** |
+|------------|--------------|-----------------|-------------------|----------|
+| `POST` | `/api/auth/register` | User registration | ❌ | None |
+| `POST` | `/api/auth/verify-otp` | Verify OTP code | ❌ | None |
+| `POST` | `/api/auth/login` | User login | ❌ | None |
+| `POST` | `/api/auth/refresh` | Refresh access token | 🔄 | Refresh Token |
+| `POST` | `/api/auth/logout` | User logout | ✅ | Any |
+| `GET` | `/api/auth/google` | Google OAuth login | ❌ | None |
+| `GET` | `/api/auth/google/callback` | Google OAuth callback | 🔄 | OAuth Flow |
+
+---
+
 ### 1. Register User
 
 **Endpoint:** `POST /api/auth/register`
@@ -259,6 +273,17 @@ Cookie: accessToken=<token>; refreshToken=<refresh-token>
 
 ## 👤 User Management Endpoints
 
+### 📋 **User Management API Endpoints**
+
+| **Method** | **Endpoint** | **Description** | **Auth Required** | **Role** |
+|------------|--------------|-----------------|-------------------|----------|
+| `GET` | `/api/users` | Get all users | ✅ | admin |
+| `GET` | `/api/users/:id` | Get user by ID | ✅ | admin |
+| `PATCH` | `/api/users/:id/role` | Update user role | ✅ | admin |
+| `DELETE` | `/api/users/:id` | Delete user | ✅ | admin |
+
+---
+
 ### 1. Get All Users
 
 **Endpoint:** `GET /api/users`
@@ -413,6 +438,20 @@ Authorization: Bearer <admin-access-token>
 ---
 
 ## 🎓 Capstone Management Endpoints
+
+### 📋 **Capstone Management API Endpoints**
+
+| **Method** | **Endpoint** | **Description** | **Auth Required** | **Role** |
+|------------|--------------|-----------------|-------------------|----------|
+| `POST` | `/api/capstones` | Create new capstone | ✅ | alumni, admin |
+| `GET` | `/api/capstones/search` | Search capstones | ✅ | Any |
+| `GET` | `/api/capstones` | Get all capstones | ✅ | Any |
+| `GET` | `/api/capstones/:id` | Get capstone detail | ✅ | Any |
+| `PUT` | `/api/capstones/:id` | Update capstone | ✅ | alumni (owner), admin |
+| `GET` | `/api/capstones/:id/proposal` | Get proposal link | ✅ | admin |
+| `DELETE` | `/api/capstones/:id` | Delete capstone | ✅ | alumni (owner), admin |
+
+---
 
 ### 1. Create Capstone
 
@@ -687,6 +726,17 @@ Authorization: Bearer <alumni-access-token>
 
 ## 👥 Group Management Endpoints
 
+### 📋 **Group Management API Endpoints**
+
+| **Method** | **Endpoint** | **Description** | **Auth Required** | **Role** |
+|------------|--------------|-----------------|-------------------|----------|
+| `POST` | `/api/groups` | Create new group | ✅ | admin |
+| `DELETE` | `/api/groups/:id` | Delete group | ✅ | admin |
+| `POST` | `/api/groups/:id/pilih` | Choose capstone | ✅ | mahasiswa (leader) |
+| `GET` | `/api/groups/:id` | Get group detail | ✅ | Group member, admin |
+
+---
+
 ### 1. Create Group
 
 **Endpoint:** `POST /api/groups`
@@ -896,6 +946,15 @@ Authorization: Bearer <member-access-token>
 
 ## ⭐ Review Management Endpoints
 
+### 📋 **Review Management API Endpoints**
+
+| **Method** | **Endpoint** | **Description** | **Auth Required** | **Role** |
+|------------|--------------|-----------------|-------------------|----------|
+| `GET` | `/api/reviews/pending` | Get pending reviews | ✅ | alumni |
+| `POST` | `/api/reviews/:id` | Review group selection | ✅ | alumni (capstone owner) |
+
+---
+
 ### 1. Get Pending Reviews
 
 **Endpoint:** `GET /api/reviews/pending`
@@ -1012,6 +1071,16 @@ Content-Type: application/json
 ---
 
 ## 🔔 Notification Management Endpoints
+
+### 📋 **Notification Management API Endpoints**
+
+| **Method** | **Endpoint** | **Description** | **Auth Required** | **Role** |
+|------------|--------------|-----------------|-------------------|----------|
+| `POST` | `/api/notifications` | Create notification | ✅ | Any |
+| `GET` | `/api/notifications` | Get user notifications | ✅ | Any |
+| `PATCH` | `/api/notifications/:id/read` | Mark as read | ✅ | Any (owner only) |
+
+---
 
 ### 1. Create Notification
 
