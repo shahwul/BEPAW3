@@ -87,23 +87,20 @@ exports.updateCapstone = async (capstoneId, updateData, file) => {
 
   // Handle file upload if new file is provided
   if (file) {
-    // Delete old file from Google Drive if exists
+    // Hapus file lama dari Google Drive kalau ada
     if (capstone.proposalFileId) {
       try {
-        await drive.files.delete({ 
+        await drive.files.delete({
           fileId: capstone.proposalFileId,
-          supportsAllDrives: true, // Enable support for Shared Drives
-          supportsTeamDrives: true // For backward compatibility
+          supportsAllDrives: true,
         });
       } catch (error) {
         console.error("Error deleting old file:", error);
       }
     }
 
-    // Create readable stream from memory buffer
+    // Upload file baru
     const bufferStream = Readable.from(file.buffer);
-    
-    // Upload new file
     const response = await drive.files.create({
       requestBody: {
         name: file.originalname,
@@ -114,16 +111,36 @@ exports.updateCapstone = async (capstoneId, updateData, file) => {
         mimeType: file.mimetype,
         body: bufferStream,
       },
-      supportsAllDrives: true, // Enable support for Shared Drives
-      supportsTeamDrives: true // For backward compatibility
+      supportsAllDrives: true,
+      supportsTeamDrives: true
     });
 
-    capstone.proposalFileId = response.data.id;
-    capstone.proposalUrl = null; // Reset URL so it gets regenerated
+    const newFileId = response.data.id;
+
+    // Set permission biar bisa diakses
+    await drive.permissions.create({
+      fileId: newFileId,
+      requestBody: { role: "reader", type: "anyone" },
+      supportsAllDrives: true,
+      supportsTeamDrives: true
+    });
+
+    // Ambil link file baru
+    const result = await drive.files.get({
+      fileId: newFileId,
+      fields: "webViewLink",
+      supportsAllDrives: true,
+      supportsTeamDrives: true
+    });
+
+    // Update ke capstone
+    capstone.proposalFileId = newFileId;
+    capstone.proposalUrl = result.data.webViewLink;
   }
 
   return await capstone.save();
 };
+
 
 exports.searchCapstones = async (query) => {
     const filter = {};

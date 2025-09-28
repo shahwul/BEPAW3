@@ -10,7 +10,7 @@ const userRoutes = require('./routes/userRoutes');
 const capstoneRoutes = require('./routes/capstoneRoutes');
 const groupRoutes = require('./routes/groupRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
-const notificationRoutes = require('./routes/notificationRoutes');  
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // Initialize Express app
 const app = express();

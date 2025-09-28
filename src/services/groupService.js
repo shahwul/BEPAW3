@@ -57,8 +57,15 @@ exports.chooseCapstone = async (groupId, capstoneId) => {
     throw new Error("Capstone is not available for selection.");
   }
 
-  const existingRequest = await Request.findOne({ group: group._id, capstone: capstoneId });
-  if (existingRequest) throw new Error("You have already requested this capstone.");
+  const existingRequest = await Request.findOne({ 
+    group: group._id, 
+    capstone: capstoneId,
+    status: { $ne: "Ditolak" }  // hanya blokir kalau bukan ditolak
+  });
+
+  if (existingRequest) {
+    throw new Error("You have already requested this capstone.");
+  }
 
   const requestCount = await Request.countDocuments({ 
     group: group._id, 
@@ -85,7 +92,7 @@ exports.chooseCapstone = async (groupId, capstoneId) => {
   try {
     await notificationService.createNotification({
       userId: group.ketua,
-      type: "CAPSTONE_REQUEST",
+      type: "notification",
       message: `Kelompok Anda telah memilih capstone dengan ID: ${capstoneId}. Silakan tinjau dan setujui.`,
       data: { groupId: group._id, capstoneId }
     });
@@ -96,7 +103,7 @@ exports.chooseCapstone = async (groupId, capstoneId) => {
   try {
     await notificationService.createNotification({
       userId: capstone.alumni,
-      type: "CAPSTONE_REQUEST",
+      type: "capstone_request",
       message: `Kelompok dengan ID: ${group._id} telah memilih capstone Anda. Silakan tinjau permintaan mereka.`,
       data: { groupId: group._id, capstoneId }
     });
