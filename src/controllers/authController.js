@@ -13,15 +13,6 @@ exports.register = async (req, res) => {
   }
 };
 
-exports.sendOTP = async (req, res) => {
-  try {
-    const result = await authService.sendOTP(req.body);
-    res.json(result);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
-
 exports.verifyOTP = async (req, res) => {
   try {
     const { user, tokens } = await authService.verifyOTP(req.body);

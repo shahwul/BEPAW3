@@ -37,26 +37,6 @@ exports.register = async ({ name, email, password }) => {
   return { email, needVerification: true };
 };
 
-exports.sendOTP = async ({ email, password }) => {
-  const user = await User.findOne({ email });
-  if (!user) throw new Error("Email tidak ditemukan");
-
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) throw new Error("Password salah");
-
-  const otp = otpService.generateOTP();
-  const otpExpiry = otpService.generateOTPExpiry();
-
-  user.otp = otp;
-  user.otpExpiry = otpExpiry;
-  await user.save();
-
-  const emailResult = await otpService.sendOTPEmail(email, otp, "login");
-  if (!emailResult.success) throw new Error("Gagal mengirim email OTP");
-
-  return { email, needOTP: true };
-};
-
 exports.verifyOTP = async ({ email, otp }) => {
   const user = await User.findOne({ email });
   if (!user) throw new Error("User tidak ditemukan");

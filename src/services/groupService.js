@@ -5,15 +5,45 @@ const Request = require("../models/request");
 const notificationService = require("./notificationService");
 
 exports.createGroup = async ({ namaKelompok, ketua, anggota }) => {
-  const ketuaUser = await User.findOne({ email: ketua });
+  // Validasi ketua berdasarkan ID
+  const ketuaUser = await User.findById(ketua);
   if (!ketuaUser) throw new Error("Ketua user not found");
+  
+  // Validasi role ketua harus mahasiswa
+  if (ketuaUser.role !== "mahasiswa") {
+    throw new Error("Ketua must have role 'mahasiswa'");
+  }
+
+  // Validasi anggota berdasarkan ID
+  const anggotaUsers = await User.find({ 
+    _id: { $in: anggota },
+    role: "mahasiswa"
+  });
+  
+  if (anggotaUsers.length !== anggota.length) {
+    throw new Error("Some anggota not found or don't have role 'mahasiswa'");
+  }
+
+  // Pastikan ketua termasuk dalam anggota (tanpa duplikasi)
+  const allMembers = [...new Set([ketua, ...anggota])];
+  
+  // Validasi maksimal 4 anggota
+  if (allMembers.length > 4) {
+    throw new Error("Maximum 4 members per group");
+  }
 
   const group = new Group({ 
     namaKelompok, 
-    ketua: ketuaUser._id, 
-    anggota: [ketuaUser._id, ...anggota] 
+    ketua: ketua, 
+    anggota: allMembers 
   });
-  return await group.save();
+  
+  const savedGroup = await group.save();
+  
+  // Populate data untuk response
+  return await Group.findById(savedGroup._id)
+    .populate("ketua", "name email")
+    .populate("anggota", "name email");
 };
 
 exports.chooseCapstone = async (groupId, capstoneId) => {
