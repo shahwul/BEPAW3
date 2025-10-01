@@ -140,4 +140,4 @@ Dokumentasi endpoint API dapat ditemukan di [API_ENDPOINTS.md](./API_ENDPOINTS.m
 ---
 
 ## 📄 Laporan
-Laporan lengkap dapat ditemukan di [Laporan.pdf](./Laporan.pdf).
+Laporan lengkap dapat ditemukan di [Laporan.pdf](https://drive.google.com/file/d/1x-VHX4Dy4iFcgrFt6_LSdF6KcqDMXBUJ/view?usp=sharing).
