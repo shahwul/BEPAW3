@@ -24,7 +24,6 @@ Tujuan utama aplikasi ini adalah memberikan kemudahan informasi, transparansi, d
 ## Nama Kelompok & Anggota
 **Kelompok:** PAW 3
 - Hanifah Putri Ariani (22/504042/TK/55111) - Ketua
-- Muhammad Farhan Fadhlurrahman (22/505243/TK/55276)
 - Navika Berlianda Rihadatul'aisya (22/505243/TK/55277)
 - Raudha Nur Hidayatullah Susanto (22/500044/TK/54789)
 - Muhammad Haidar Syaafi' (23/521614/TK/57545)
