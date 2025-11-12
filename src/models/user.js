@@ -4,20 +4,27 @@ const UserSchema = new mongoose.Schema({
   name: String,
   email: { type: String, unique: true, required: true },
   password: { 
-    type: String, 
-    required: function() { return !this.googleId; } 
+    type: String
+    // Password optional - untuk pre-created users by admin
+    // Will be set when user first registers
   },
-  googleId: { type: String },
   role: { 
     type: String, 
-    enum: ["admin", "alumni", "mahasiswa", "guest"], 
+    enum: ["admin", "dosen", "alumni", "mahasiswa", "guest"], 
     default: "guest" 
+  },
+  // Mahasiswa-specific fields
+  nim: { 
+    type: String,
+    sparse: true  // Allow null, but unique if provided
+  },
+  prodi: { 
+    type: String
   },
   otp: { type: String },
   otpExpiry: { type: Date },
   isVerified: { type: Boolean, default: false },
-  refreshToken: { type: String },
-  refreshTokenExpiry: { type: Date }
+  isClaimed: { type: Boolean, default: false } // Track if user has claimed their account
 });
 
 module.exports = mongoose.model("User", UserSchema);

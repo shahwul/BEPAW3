@@ -6,16 +6,15 @@ const { isKetua, isAnggota } = require("../middlewares/groupAccess");
 
 const router = express.Router();
 
-// hanya admin bisa buat grup
+// Admin only - write operations
 router.post("/", auth, role(["admin"]), groupController.createGroup);
-
-// hanya admin bisa hapus grup
+router.put("/:id", auth, role(["admin"]), groupController.updateGroup);
 router.delete("/:id", auth, role(["admin"]), groupController.deleteGroup);
 
 // ketua bisa pilih capstone
 router.post("/:id/pilih", auth, role(["mahasiswa"]), isKetua, groupController.chooseCapstone);
 
-// semua anggota grup bisa lihat detail
-router.get("/:id", auth, isAnggota, groupController.getGroupDetail);
+// anggota grup + dosen bisa lihat detail
+router.get("/:id", auth, groupController.getGroupDetail);
 
 module.exports = router;
