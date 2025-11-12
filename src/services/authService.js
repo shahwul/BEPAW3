@@ -4,14 +4,11 @@ const otpService = require("./otpService");
 const tokenService = require("./tokenService");
 
 exports.register = async ({ email, password, name, nim, prodi }) => {
-  // Exception untuk admin testing
-  const isTestAdmin = email === "imutbobo00@gmail.com";
-  
   // Validasi domain email UGM
   const isUGMMahasiswa = email.endsWith("@mail.ugm.ac.id");
   const isUGMAdmin = email.endsWith("@ugm.ac.id");
   
-  if (!isUGMMahasiswa && !isUGMAdmin && !isTestAdmin) {
+  if (!isUGMMahasiswa && !isUGMAdmin) {
     throw new Error("Registrasi hanya diperbolehkan untuk email dengan domain @mail.ugm.ac.id atau @ugm.ac.id");
   }
 
@@ -75,7 +72,6 @@ exports.register = async ({ email, password, name, nim, prodi }) => {
   let role = "guest";
   if (isUGMMahasiswa) role = "mahasiswa";
   else if (isUGMAdmin) role = "dosen"; // @ugm.ac.id = dosen
-  else if (isTestAdmin) role = "admin"; // Exception untuk test admin
 
   const otp = otpService.generateOTP();
   const otpExpiry = otpService.generateOTPExpiry();
@@ -140,19 +136,22 @@ exports.verifyOTP = async ({ email, otp }) => {
 };
 
 exports.login = async ({ email, password }) => {
-  // Exception untuk admin testing
-  const isTestAdmin = email === "imutbobo00@gmail.com";
-  
-  // Validasi domain email UGM
-  const isUGMMahasiswa = email.endsWith("@mail.ugm.ac.id");
-  const isUGMAdmin = email.endsWith("@ugm.ac.id");
-  
-  if (!isUGMMahasiswa && !isUGMAdmin && !isTestAdmin) {
-    throw new Error("Login hanya diperbolehkan untuk email dengan domain @mail.ugm.ac.id atau @ugm.ac.id");
-  }
-
+  // Cari user di database
   const user = await User.findOne({ email });
   if (!user) throw new Error("Email tidak ditemukan");
+
+  // Jika user sudah ada dan role-nya admin, izinkan login tanpa validasi domain
+  const isExistingAdmin = user.role === 'admin';
+
+  // Jika bukan admin, validasi domain email UGM
+  if (!isExistingAdmin) {
+    const isUGMMahasiswa = email.endsWith("@mail.ugm.ac.id");
+    const isUGMAdmin = email.endsWith("@ugm.ac.id");
+    
+    if (!isUGMMahasiswa && !isUGMAdmin) {
+      throw new Error("Login hanya diperbolehkan untuk email dengan domain @mail.ugm.ac.id atau @ugm.ac.id");
+    }
+  }
 
   // Jika user belum claimed (pre-created by admin tanpa password)
   if (!user.password || !user.isClaimed) {
