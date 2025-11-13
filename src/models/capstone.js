@@ -7,7 +7,8 @@ const CapstoneSchema = new mongoose.Schema({
   },
   kategori: { 
     type: String, 
-    required: true 
+    required: true,
+    enum: ["Pengolahan Sampah", "Smart City", "Transportasi Ramah Lingkungan"]
   },
   ketua: { 
     type: mongoose.Schema.Types.ObjectId, 
@@ -33,9 +34,21 @@ const CapstoneSchema = new mongoose.Schema({
     type: String, 
     required: true 
   },
+  hasil: {
+    deskripsi: String,
+    gambar: {
+      type: [String],  // Array of image URLs from external storage (Cloudinary/Google Drive)
+      validate: {
+        validator: function(arr) {
+          return arr.length <= 2;
+        },
+        message: 'Maksimal 2 gambar hasil'
+      }
+    }
+  },
   status: { 
     type: String, 
-    enum: ["Tersedia", "Dipilih"], 
+    enum: ["Tersedia", "Tidak Tersedia"], 
     default: "Tersedia" 
   },
   linkProposal: { type: String }  // Link ke proposal (Google Drive, OneDrive, dll) - optional

@@ -2,7 +2,8 @@ const capstoneService = require("../services/capstoneService");
 
 exports.createCapstone = async (req, res) => {
   try {
-    const capstone = await capstoneService.createCapstone(req.body);
+    // req.files akan berisi array gambar jika di-upload
+    const capstone = await capstoneService.createCapstone(req.body, req.files);
     res.status(201).json(capstone);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -55,10 +56,11 @@ exports.updateCapstone = async (req, res) => {
       return res.status(403).json({ message: "Not authorized to update this capstone" });
     }
 
-    // Update capstone
+    // Update capstone (req.files untuk upload gambar baru)
     const updatedCapstone = await capstoneService.updateCapstone(
       capstoneId,
-      req.body
+      req.body,
+      req.files
     );
 
     res.json(updatedCapstone);

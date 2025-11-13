@@ -1,7 +1,8 @@
 const Capstone = require("../models/capstone");
 const User = require("../models/user");
+const cloudinaryService = require("./cloudinaryService");
 
-exports.createCapstone = async ({ judul, kategori, ketua, anggota, dosen, abstrak, linkProposal }) => {
+exports.createCapstone = async ({ judul, kategori, ketua, anggota, dosen, abstrak, linkProposal, hasilDeskripsi }, files = null) => {
   // Validasi ketua
   const ketuaUser = await User.findById(ketua);
   if (!ketuaUser) throw new Error("Ketua user not found");
@@ -38,7 +39,7 @@ exports.createCapstone = async ({ judul, kategori, ketua, anggota, dosen, abstra
     throw new Error("Dosen must have role 'dosen' or 'admin'");
   }
 
-  const capstone = new Capstone({
+  const capstoneData = {
     judul,
     kategori,
     ketua,
@@ -46,8 +47,37 @@ exports.createCapstone = async ({ judul, kategori, ketua, anggota, dosen, abstra
     dosen,
     abstrak,
     linkProposal
-  });
+  };
 
+  // Upload gambar hasil jika ada files
+  if (files && files.length > 0) {
+    if (files.length > 2) {
+      throw new Error("Maksimal 2 gambar hasil");
+    }
+
+    const uploadResult = await cloudinaryService.uploadMultipleImages(
+      files,
+      'capstone-hasil',
+      2
+    );
+
+    if (!uploadResult.success) {
+      throw new Error(`Gagal upload gambar: ${uploadResult.error}`);
+    }
+
+    capstoneData.hasil = {
+      deskripsi: hasilDeskripsi || '',
+      gambar: uploadResult.urls
+    };
+  } else if (hasilDeskripsi) {
+    // Jika hanya ada deskripsi tanpa gambar
+    capstoneData.hasil = {
+      deskripsi: hasilDeskripsi,
+      gambar: []
+    };
+  }
+
+  const capstone = new Capstone(capstoneData);
   return await capstone.save();
 };
 
@@ -142,7 +172,7 @@ exports.getCapstoneDetail = async (id, userId, userRole) => {
   return capstoneObj;
 };
 
-exports.updateCapstone = async (capstoneId, updateData) => {
+exports.updateCapstone = async (capstoneId, updateData, files = null) => {
   const capstone = await Capstone.findById(capstoneId);
   if (!capstone) throw new Error("Capstone not found");
 
@@ -152,6 +182,48 @@ exports.updateCapstone = async (capstoneId, updateData) => {
   if (updateData.abstrak !== undefined) capstone.abstrak = updateData.abstrak;
   if (updateData.status !== undefined) capstone.status = updateData.status;
   if (updateData.linkProposal !== undefined) capstone.linkProposal = updateData.linkProposal;
+
+  // Handle gambar hasil update
+  if (files && files.length > 0) {
+    if (files.length > 2) {
+      throw new Error("Maksimal 2 gambar hasil");
+    }
+
+    // Delete old images from Cloudinary if exist
+    if (capstone.hasil && capstone.hasil.gambar && capstone.hasil.gambar.length > 0) {
+      const oldPublicIds = capstone.hasil.gambar
+        .map(url => cloudinaryService.extractPublicId(url))
+        .filter(id => id !== null);
+
+      if (oldPublicIds.length > 0) {
+        await cloudinaryService.deleteMultipleImages(oldPublicIds);
+      }
+    }
+
+    // Upload new images
+    const uploadResult = await cloudinaryService.uploadMultipleImages(
+      files,
+      'capstone-hasil',
+      2
+    );
+
+    if (!uploadResult.success) {
+      throw new Error(`Gagal upload gambar: ${uploadResult.error}`);
+    }
+
+    if (!capstone.hasil) {
+      capstone.hasil = {};
+    }
+    capstone.hasil.gambar = uploadResult.urls;
+  }
+
+  // Update deskripsi hasil jika ada
+  if (updateData.hasilDeskripsi !== undefined) {
+    if (!capstone.hasil) {
+      capstone.hasil = { gambar: [] };
+    }
+    capstone.hasil.deskripsi = updateData.hasilDeskripsi;
+  }
 
   // Update ketua jika ada
   if (updateData.ketua !== undefined) {
@@ -224,12 +296,12 @@ exports.searchCapstones = async (query, userId, userRole) => {
         filter.judul = { $regex: query.judul, $options: 'i' };
     }
     
-    // Filter by kategori (exact match)
+    // Filter by kategori (exact match - hanya: "Pengolahan Sampah", "Smart City", "Transportasi Ramah Lingkungan")
     if (query.kategori) {
         filter.kategori = query.kategori;
     }
     
-    // Filter by status (optional)
+    // Filter by status (exact match - hanya: "Tersedia", "Tidak Tersedia")
     if (query.status) {
         filter.status = query.status;
     }
@@ -293,6 +365,17 @@ exports.searchCapstones = async (query, userId, userRole) => {
 exports.deleteCapstone = async (capstoneId) => {
   const capstone = await Capstone.findById(capstoneId);
   if (!capstone) throw new Error("Capstone not found");
+
+  // Delete gambar hasil from Cloudinary if exist
+  if (capstone.hasil && capstone.hasil.gambar && capstone.hasil.gambar.length > 0) {
+    const publicIds = capstone.hasil.gambar
+      .map(url => cloudinaryService.extractPublicId(url))
+      .filter(id => id !== null);
+
+    if (publicIds.length > 0) {
+      await cloudinaryService.deleteMultipleImages(publicIds);
+    }
+  }
 
   // Delete capstone from database
   const deletedCapstone = await Capstone.findByIdAndDelete(capstoneId);
