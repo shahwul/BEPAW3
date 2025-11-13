@@ -119,11 +119,10 @@ Dokumentasi endpoint API dapat ditemukan di [API_ENDPOINTS.md](./API_ENDPOINTS.m
 
 ## ✨ Fitur
 * Autentikasi (Login, Register, OTP, Refresh Token)
-* Manajemen User (Role-based: Admin, Dosen, Mahasiswa)
-* Manajemen Capstone Project (buat, lihat, join group)
-* Integrasi Google Drive (upload file laporan / dokumen)
-* Notifikasi (request, approval, status)
-* Review & Feedback dari dosen
+* Manajemen User (Role-based: Admin/Dosen, Alumni, Mahasiswa)
+* Manajemen Capstone Project (buat, lihat, tambah, update/edit, hapus)
+* Integrasi Google Drive (upload file laporan / dokumen / foto)
+* Notifikasi (request, approval, report)
 
 ---
 
