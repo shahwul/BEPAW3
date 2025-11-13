@@ -1,23 +1,14 @@
 # CapCon - Capstone Container
 
 ## Deskripsi Aplikasi
-CapCon (Capstone Container) adalah aplikasi web yang memfasilitasi alur informasi dan koordinasi antara **Mahasiswa**, **Alumni**, **Dosen**, dan **Admin** dalam program capstone.  
 
-**Fitur Utama:**
-- **Mahasiswa** dapat melihat daftar capstone yang ditawarkan, membentuk grup (max 4: 1 ketua + 3 anggota), dan mengajukan request/proposal
-- **Alumni** dapat membuat dan mengelola capstone serta melakukan review proposal mahasiswa
-- **Dosen** dapat melakukan review dan memberikan feedback terhadap capstone project
-- **Admin** mengelola data pengguna (termasuk pre-populated users), capstone, dan memastikan alur capstone berjalan lancar
+CapCon (Capstone Container) aplikasi web yang berfungsi sebagai wadah terpusat untuk memfasilitasi alur informasi dan koordinasi antara **Mahasiswa**, **Alumni**, dan **Admin** dalam pelaksanaan program capstone.
+- **Mahasiswa** dapat menelusuri daftar capstone project yang pernah dikerjakan alumni serta mengajukan permintaan untuk melanjutkan project tersebut.
+- **Alumni** dapat meninjau dan memberikan keputusan terhadap permintaan kelanjutan project yang diajukan oleh mahasiswa.
+- **Admin** berperan dalam mengelola data pengguna, project, serta memastikan proses dan komunikasi antar pihak berjalan dengan lancar.
 
-**Keunggulan Sistem:**
-- 🔐 **OTP Email Verification** untuk keamanan registrasi
-- 👥 **Pre-populated Users** - Admin dapat membuat user sebelumnya yang dapat di-claim
-- 🎓 **Data Akademik** - Support NIM dan Prodi untuk mahasiswa/alumni
-- 🔍 **Advanced Search** - Filter berdasarkan judul, kategori, status dengan sorting
-- 🔒 **Access Control** - Link proposal hanya bisa diakses oleh admin dan grup yang sudah approved
-- 📊 **Separation of Concerns** - Ketua dan anggota dipisah untuk kemudahan frontend
 
-Tujuan utama aplikasi ini adalah memberikan kemudahan informasi, transparansi, dan efisiensi dalam proses capstone mahasiswa TETI.
+Tujuan utama CAPCON adalah menciptakan sistem informasi capstone yang lebih terintegrasi, transparan, dan efisien, sehingga mendorong keberlanjutan inovasi penelitian mahasiswa di Departemen Teknik Elektro dan Teknologi Informasi (DTETI) UGM.
 
 ---
 
@@ -158,48 +149,14 @@ Dokumentasi lengkap endpoint API dapat ditemukan di:
 
 ---
 
-## ✨ Fitur Utama
 
-### 🔐 Authentication & Authorization
-- **OTP Email Verification** - Keamanan registrasi dengan OTP 6 digit (10 menit expiry)
-- **JWT Token** - Single token system dengan 24 jam expiry
-- **Role-Based Access Control** - 5 roles: admin, dosen, alumni, mahasiswa, guest
-- **Pre-populated Users** - Admin dapat membuat user yang dapat di-claim
-- **Email Domain Validation** - Auto role assignment (@ugm.ac.id, @mail.ugm.ac.id)
+## ✨ Fitur
+* Autentikasi (Login, Register, OTP, Refresh Token)
+* Manajemen User (Role-based: Admin/Dosen, Alumni, Mahasiswa)
+* Manajemen Capstone Project (buat, lihat, tambah, update/edit, hapus)
+* Integrasi Google Drive (upload file laporan / dokumen / foto)
+* Notifikasi (request, approval, report)
 
-### 👥 User Management
-- **Minimal Registration** - Hanya email + password required
-- **Academic Data** - NIM dan Prodi untuk mahasiswa/alumni
-- **User Claiming** - Pre-populated user dapat di-claim dengan OTP verification
-- **Profile Management** - Update name, nim, prodi, role (admin only)
-
-### 📚 Capstone Management
-- **Advanced Search** - Filter by judul, kategori, status
-- **Sorting** - Sort by terbaru (newest) atau judul (A-Z)
-- **Access Control** - Link proposal hanya untuk admin dan grup yang approved
-- **CRUD Operations** - Create, read, update, delete capstone projects
-- **Data Separation** - Ketua dan anggota terpisah untuk kemudahan frontend
-
-### 👨‍👩‍👦 Group Management
-- **Group Formation** - Max 4 members (1 ketua + 3 anggota)
-- **Separate Ketua** - Ketua tidak termasuk dalam array anggota
-- **Group Access Control** - Only ketua dan anggota can modify group
-- **Request System** - Request to join capstone with approval flow
-
-### 📝 Review & Feedback
-- **Alumni Review** - Alumni can review assigned capstones
-- **Dosen Review** - Dosen provides feedback and assessment
-- **Review Management** - Approve, reject, or request revision
-
-### 🔔 Notification System
-- **Real-time Notifications** - Request status, approvals, updates
-- **Notification Types** - Request, approval, rejection, review
-- **Mark as Read** - User can mark notifications as read
-
-### 📁 Google Drive Integration
-- **File Upload** - Upload proposal and documents to Google Drive
-- **Secure Storage** - Files stored in organized folder structure
-- **Access Management** - Only authorized users can access files
 
 ---
 
