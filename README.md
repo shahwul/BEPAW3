@@ -1,19 +1,18 @@
 # CapCon - Capstone Container
 
 ## Deskripsi Aplikasi
-CapCon (Capstone Container) adalah aplikasi web yang memfasilitasi alur informasi dan koordinasi antara **Mahasiswa**, **Alumni**, dan **Admin** dalam program capstone.  
-- **Mahasiswa** dapat melihat daftar capstone yang ditawarkan alumni serta mengajukan request/proposal.  
-- **Alumni** dapat membuat dan mengelola capstone serta melakukan review proposal mahasiswa.  
-- **Admin** mengelola data pengguna, capstone, dan memastikan alur capstone berjalan lancar.  
+CapCon (Capstone Container) aplikasi web yang berfungsi sebagai wadah terpusat untuk memfasilitasi alur informasi dan koordinasi antara **Mahasiswa**, **Alumni**, dan **Admin** dalam pelaksanaan program capstone.
+- **Mahasiswa** dapat menelusuri daftar capstone project yang pernah dikerjakan alumni serta mengajukan permintaan untuk melanjutkan project tersebut.
+- **Alumni** dapat meninjau dan memberikan keputusan terhadap permintaan kelanjutan project yang diajukan oleh mahasiswa.
+- **Admin** berperan dalam mengelola data pengguna, project, serta memastikan proses dan komunikasi antar pihak berjalan dengan lancar.
 
-Tujuan utama aplikasi ini adalah memberikan kemudahan informasi, transparansi, dan efisiensi dalam proses capstone mahasiswa TETI.
+Tujuan utama CAPCON adalah menciptakan sistem informasi capstone yang lebih terintegrasi, transparan, dan efisien, sehingga mendorong keberlanjutan inovasi penelitian mahasiswa di Departemen Teknik Elektro dan Teknologi Informasi (DTETI) UGM.
 
 ---
 
 ## Nama Kelompok & Anggota
 **Kelompok:** PAW 3
 - Hanifah Putri Ariani (22/504042/TK/55111) - Ketua
-- Muhammad Farhan Fadhlurrahman (22/505243/TK/552
 - Navika Berlianda Rihadatul'aisya (22/505243/TK/55277)
 - Raudha Nur Hidayatullah Susanto (22/500044/TK/54789)
 - Muhammad Haidar Syaafi' (23/521614/TK/57545)
