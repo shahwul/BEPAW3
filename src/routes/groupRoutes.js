@@ -14,6 +14,21 @@ router.delete("/:id", auth, role(["admin"]), groupController.deleteGroup);
 // ketua bisa pilih capstone
 router.post("/:id/pilih", auth, role(["mahasiswa"]), isKetua, groupController.chooseCapstone);
 
+// ketua bisa upload CV
+router.patch("/:id/upload-cv", auth, role(["mahasiswa"]), groupController.uploadCV);
+
+// ketua bisa report issue
+router.patch("/:id/report-issue", auth, role(["mahasiswa"]), groupController.reportIssue);
+
+// Admin - statistics
+router.get("/stats", auth, role(["admin"]), groupController.getGroupStats);
+
+// Admin - get reported groups
+router.get("/reported", auth, role(["admin"]), groupController.getReportedGroups);
+
+// Admin - resolve reported issue
+router.patch("/:id/resolve-issue", auth, role(["admin"]), groupController.resolveReportedIssue);
+
 // anggota grup + dosen bisa lihat detail
 router.get("/:id", auth, groupController.getGroupDetail);
 

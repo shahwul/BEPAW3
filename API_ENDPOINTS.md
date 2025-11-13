@@ -31,6 +31,7 @@ Base URL: `http://localhost:5000/api`
 |--------|----------|---------------|------|-------------|
 | POST | `/` | ✅ | admin | Create pre-populated user |
 | POST | `/bulk` | ✅ | admin | Bulk create pre-populated users |
+| GET | `/stats` | ✅ | admin | Get user statistics |
 | GET | `/` | ✅ | admin, dosen | Get all users |
 | GET | `/:id` | ✅ | admin, dosen | Get user by ID |
 | PATCH | `/:id` | ✅ | admin | Update user (role, name, email, nim, prodi, etc) |
@@ -53,10 +54,15 @@ Base URL: `http://localhost:5000/api`
 | Method | Endpoint | Auth Required | Role | Description |
 |--------|----------|---------------|------|-------------|
 | POST | `/` | ✅ | admin | Create new group |
+| GET | `/stats` | ✅ | admin | Get group statistics |
+| GET | `/reported` | ✅ | admin | Get groups with reported issues |
+| PATCH | `/:id/resolve-issue` | ✅ | admin | Mark reported issue as resolved |
 | GET | `/:id` | ✅ | All | Get group detail |
 | PUT | `/:id` | ✅ | admin | Update group |
 | DELETE | `/:id` | ✅ | admin | Delete group |
 | POST | `/:id/pilih` | ✅ | mahasiswa (ketua) | Ketua pilih capstone untuk group |
+| PATCH | `/:id/upload-cv` | ✅ | mahasiswa (ketua) | Ketua upload CV gabungan |
+| PATCH | `/:id/report-issue` | ✅ | mahasiswa (ketua) | Ketua report data salah di tim |
 
 ### 📝 Reviews (`/api/reviews`)
 
@@ -583,6 +589,55 @@ Authorization: Bearer {admin_token}
   "message": "User not found"
 }
 ```
+
+---
+
+### 7. Get User Statistics
+
+**GET** `/api/users/stats`
+
+Get statistik user untuk admin dashboard.
+
+**Headers:**
+```
+Authorization: Bearer {admin_token}
+```
+
+**Required Role:** `admin`
+
+**Response Success (200):**
+```json
+{
+  "totalUsers": 150,
+  "byRole": {
+    "admin": 2,
+    "dosen": 15,
+    "alumni": 45,
+    "mahasiswa": 85,
+    "guest": 3
+  },
+  "byVerification": {
+    "verified": 130,
+    "unverified": 20
+  },
+  "byClaimStatus": {
+    "claimed": 140,
+    "unclaimed": 10
+  },
+  "academicData": {
+    "withNIM": 120,
+    "withoutNIM": 10
+  }
+}
+```
+
+**Notes:**
+- `totalUsers`: Total semua user di database
+- `byRole`: Breakdown user berdasarkan role
+- `byVerification`: User yang sudah/belum verify email (OTP)
+- `byClaimStatus`: User yang claimed (self-registered) vs unclaimed (pre-populated)
+- `academicData`: Mahasiswa/Alumni yang sudah/belum punya NIM
+- Hanya admin yang bisa akses endpoint ini
 
 ---
 
@@ -1121,9 +1176,11 @@ Content-Type: application/json
   "ketua": "673abc...",                    // User ID (mahasiswa)
   "anggota": ["673def...", "673ghi..."],   // Array of User IDs (mahasiswa), max 3
   "dosen": "673jkl...",                     // User ID (dosen)
-  "linkCVGabungan": "https://drive.google.com/cv"
+  "linkCVGabungan": "https://drive.google.com/cv"  // Optional
 }
 ```
+
+**Note:** Field `linkCVGabungan` bersifat optional. Bisa juga di-upload nanti oleh ketua melalui endpoint `/api/groups/:id/upload-cv`.
 
 **Response Success (201):**
 ```json
@@ -1339,7 +1396,159 @@ Authorization: Bearer {admin_token}
 
 ---
 
-### 5. Choose Capstone
+### 5. Get Group Statistics
+
+**GET** `/api/groups/stats`
+
+Get statistik group untuk admin dashboard.
+
+**Headers:**
+```
+Authorization: Bearer {admin_token}
+```
+
+**Required Role:** `admin`
+
+**Response Success (200):**
+```json
+{
+  "totalGroups": 42,
+  "byYear": {
+    "2025": 25,
+    "2024": 17
+  },
+  "byMemberCount": {
+    "2 members": 5,
+    "3 members": 18,
+    "4 members": 19
+  },
+  "capstoneRequests": {
+    "groupsWithRequests": 35,
+    "groupsWithoutRequests": 7,
+    "groupsWithApprovedCapstone": 28
+  },
+  "requestStatus": {
+    "pending": 15,
+    "approved": 28,
+    "rejected": 12,
+    "total": 55
+  }
+}
+```
+
+**Notes:**
+- `totalGroups`: Total semua group di database
+- `byYear`: Breakdown group berdasarkan tahun
+- `byMemberCount`: Distribusi group berdasarkan jumlah anggota (ketua + anggota)
+- `capstoneRequests`: 
+  - `groupsWithRequests`: Group yang sudah mengajukan request capstone
+  - `groupsWithoutRequests`: Group yang belum request capstone sama sekali
+  - `groupsWithApprovedCapstone`: Group yang sudah dapat approval dari alumni
+- `requestStatus`: Status breakdown dari semua request (pending/approved/rejected)
+- Hanya admin yang bisa akses endpoint ini
+
+---
+
+### 6. Get Reported Groups
+
+**GET** `/api/groups/reported`
+
+Get semua group yang melaporkan ada issue/data salah.
+
+**Headers:**
+```
+Authorization: Bearer {admin_token}
+```
+
+**Required Role:** `admin`
+
+**Response Success (200):**
+```json
+{
+  "total": 3,
+  "groups": [
+    {
+      "_id": "676...",
+      "namaTim": "Team Alpha",
+      "reportIssue": {
+        "description": "Data NIM anggota ada yang salah",
+        "reportedAt": "2025-11-13T08:30:00.000Z"
+      }
+    },
+    {
+      "_id": "676def...",
+      "namaTim": "Team Beta",
+      "reportIssue": {
+        "description": "Data dosen pembimbing perlu diupdate",
+        "reportedAt": "2025-11-13T07:15:00.000Z"
+      }
+    }
+  ]
+}
+```
+
+**Notes:**
+- Response minimal: hanya `_id`, `namaTim`, dan `reportIssue` (description & reportedAt)
+- Lebih cepat karena tidak populate ketua/anggota/dosen
+- Sorted by `reportedAt` descending (yang paling baru di atas)
+- Admin bisa lihat detail issue di field `reportIssue.description`
+- Kalau perlu detail lengkap, bisa call `GET /api/groups/:id`
+- Setelah admin perbaiki data, bisa call `PATCH /api/groups/:id/resolve-issue`
+
+---
+
+### 7. Resolve Reported Issue
+
+**PATCH** `/api/groups/:id/resolve-issue`
+
+Admin mark reported issue as resolved (tandai selesai).
+
+**Headers:**
+```
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+```
+
+**Required Role:** `admin`
+
+**URL Parameters:**
+- `id` - Group ID
+
+**Request Body:** (empty - tidak perlu body)
+
+**Response Success (200):**
+```json
+{
+  "message": "Issue resolved successfully",
+  "group": {
+    "_id": "676...",
+    "namaTim": "Team Alpha",
+    "reportIssue": {
+      "hasIssue": false,
+      "description": "",
+      "reportedAt": null
+    }
+  }
+}
+```
+
+**Response Error (404):**
+```json
+{
+  "message": "Group not found"
+}
+```
+
+**Notes:**
+- Endpoint ini untuk admin menandai issue sudah selesai ditangani
+- Otomatis set `reportIssue.hasIssue = false`
+- Clear description dan reportedAt
+- Group tidak akan muncul di `/api/groups/reported` lagi
+- Tidak perlu kirim request body
+
+---
+
+### 8. Choose Capstone
 
 **POST** `/api/groups/:id/pilih`
 
@@ -1401,6 +1610,159 @@ Content-Type: application/json
 - Hanya ketua group yang bisa pilih capstone
 - Status awal: `pending` (menunggu review alumni)
 - Create Request document di database
+
+---
+
+### 7. Upload CV Gabungan
+
+**PATCH** `/api/groups/:id/upload-cv`
+
+Ketua group upload link CV Gabungan.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**Required Role:** `mahasiswa` (harus ketua group)
+
+**URL Parameters:**
+- `id` - Group ID
+
+**Request Body:**
+```json
+{
+  "linkCVGabungan": "https://drive.google.com/file/d/.../cv-gabungan.pdf"
+}
+```
+
+**Response Success (200):**
+```json
+{
+  "message": "CV gabungan uploaded successfully",
+  "group": {
+    "_id": "676...",
+    "tema": "Healthcare Technology",
+    "namaTim": "Team Alpha",
+    "ketua": {
+      "_id": "673abc...",
+      "name": "Student Lead",
+      "email": "student@mail.ugm.ac.id"
+    },
+    "anggota": [...],
+    "dosen": {...},
+    "linkCVGabungan": "https://drive.google.com/file/d/.../cv-gabungan.pdf"
+  }
+}
+```
+
+**Response Error (400):**
+```json
+{
+  "message": "linkCVGabungan is required"
+}
+```
+
+**Response Error (403):**
+```json
+{
+  "message": "Only ketua can upload CV gabungan"
+}
+```
+
+**Response Error (404):**
+```json
+{
+  "message": "Group not found"
+}
+```
+
+**Notes:**
+- Hanya ketua group yang bisa upload CV gabungan
+- `linkCVGabungan` wajib diisi (required)
+- Link biasanya berupa Google Drive link atau Dropbox link
+- Bisa di-update berkali-kali untuk replace CV lama
+- Admin juga bisa update CV melalui endpoint PUT `/api/groups/:id`
+
+---
+
+### 8. Report Issue
+
+**PATCH** `/api/groups/:id/report-issue`
+
+Ketua group report bahwa ada data yang salah di tim mereka.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**Required Role:** `mahasiswa` (harus ketua group)
+
+**URL Parameters:**
+- `id` - Group ID
+
+**Request Body:**
+```json
+{
+  "description": "Data anggota ada yang salah, NIM tidak sesuai"
+}
+```
+
+**Response Success (200):**
+```json
+{
+  "message": "Issue reported successfully",
+  "group": {
+    "_id": "676...",
+    "tema": "Healthcare Technology",
+    "namaTim": "Team Alpha",
+    "ketua": {
+      "_id": "673abc...",
+      "name": "Student Lead",
+      "email": "student@mail.ugm.ac.id"
+    },
+    "anggota": [...],
+    "dosen": {...},
+    "reportIssue": {
+      "hasIssue": true,
+      "description": "Data anggota ada yang salah, NIM tidak sesuai",
+      "reportedAt": "2025-11-13T10:30:00.000Z"
+    }
+  }
+}
+```
+
+**Response Error (400):**
+```json
+{
+  "message": "Issue description is required"
+}
+```
+
+**Response Error (403):**
+```json
+{
+  "message": "Only ketua can report issues"
+}
+```
+
+**Response Error (404):**
+```json
+{
+  "message": "Group not found"
+}
+```
+
+**Notes:**
+- Hanya ketua group yang bisa report issue
+- `description` wajib diisi dan tidak boleh kosong
+- Report akan disimpan dengan timestamp
+- Ketua yang report bisa dilihat dari field `ketua` di group (tidak perlu field `reportedBy` terpisah)
+- Admin bisa melihat group mana saja yang sudah report issue
+- Bisa di-update berkali-kali jika ada issue baru atau update
 
 ---
 

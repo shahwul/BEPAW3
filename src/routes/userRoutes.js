@@ -5,7 +5,8 @@ const {
   updateUser, 
   getAllUsers, 
   getUserById, 
-  deleteUser 
+  deleteUser,
+  getUserStats
 } = require("../controllers/userController");
 const auth = require("../middlewares/auth");
 const role = require("../middlewares/role");
@@ -19,6 +20,7 @@ router.patch("/:id", auth, role(["admin"]), updateUser); // Update user (role, n
 router.delete("/:id", auth, role(["admin"]), deleteUser);
 
 // Admin & Dosen - read operations
+router.get("/stats", auth, role(["admin"]), getUserStats); // Get user statistics
 router.get("/", auth, role(["admin", "dosen"]), getAllUsers);
 router.get("/:id", auth, role(["admin", "dosen"]), getUserById);
 

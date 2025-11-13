@@ -110,11 +110,21 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const getUserStats = async (req, res) => {
+  try {
+    const stats = await userService.getUserStats();
+    res.json(stats);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
 module.exports = { 
   createPrePopulatedUser,
   bulkCreatePrePopulatedUsers,
   updateUser, 
   getAllUsers, 
   getUserById, 
-  deleteUser 
+  deleteUser,
+  getUserStats
 };

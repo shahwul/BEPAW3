@@ -10,7 +10,7 @@ exports.createGroup = async (req, res) => {
       ketua, 
       anggota, 
       dosen, 
-      linkCVGabungan 
+      linkCVGabungan
     });
     res.status(201).json(group);
   } catch (err) {
@@ -63,6 +63,62 @@ exports.deleteGroup = async (req, res) => {
   try {
     const group = await groupService.deleteGroup(req.params.id);
     res.json({ message: "Group deleted", group });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+exports.getGroupStats = async (req, res) => {
+  try {
+    const stats = await groupService.getGroupStats();
+    res.json(stats);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+exports.uploadCV = async (req, res) => {
+  try {
+    const { linkCVGabungan } = req.body;
+    const group = await groupService.uploadCV(req.params.id, req.user.id, linkCVGabungan);
+    res.json({ 
+      message: "CV gabungan uploaded successfully", 
+      group 
+    });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+exports.reportIssue = async (req, res) => {
+  try {
+    const { description } = req.body;
+    const group = await groupService.reportIssue(req.params.id, req.user.id, description);
+    res.json({ 
+      message: "Issue reported successfully", 
+      group 
+    });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+exports.getReportedGroups = async (req, res) => {
+  try {
+    const result = await groupService.getReportedGroups();
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+exports.resolveReportedIssue = async (req, res) => {
+  try {
+    const group = await groupService.resolveReportedIssue(req.params.id);
+    res.json({ 
+      message: "Issue resolved successfully", 
+      group 
+    });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

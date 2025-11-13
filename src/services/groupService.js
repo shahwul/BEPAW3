@@ -4,7 +4,7 @@ const Capstone = require("../models/capstone");
 const Request = require("../models/request");
 const notificationService = require("./notificationService");
 
-exports.createGroup = async ({ tema, namaTim, tahun, ketua, anggota, dosen, linkCVGabungan }) => {
+exports.createGroup = async ({ tema, namaTim, tahun, ketua, anggota, dosen, linkCVGabungan, linkCVPengalaman }) => {
   // Validasi ketua berdasarkan ID
   const ketuaUser = await User.findById(ketua);
   if (!ketuaUser) throw new Error("Ketua user not found");
@@ -53,7 +53,7 @@ exports.createGroup = async ({ tema, namaTim, tahun, ketua, anggota, dosen, link
     ketua, 
     anggota: anggota || [],
     dosen,
-    linkCVGabungan 
+    linkCVGabungan
   });
   
   const savedGroup = await group.save();
@@ -250,4 +250,177 @@ exports.deleteGroup = async (groupId) => {
   const group = await Group.findByIdAndDelete(groupId);
   if (!group) throw new Error("Group not found");
   return group;
+};
+
+exports.uploadCV = async (groupId, userId, linkCVGabungan) => {
+  const group = await Group.findById(groupId);
+  if (!group) throw new Error("Group not found");
+
+  // Validasi: hanya ketua yang bisa upload CV
+  if (group.ketua.toString() !== userId) {
+    throw new Error("Only ketua can upload CV gabungan");
+  }
+
+  // Validasi: linkCVGabungan harus ada
+  if (!linkCVGabungan) {
+    throw new Error("linkCVGabungan is required");
+  }
+
+  // Update link CV
+  group.linkCVGabungan = linkCVGabungan;
+
+  await group.save();
+
+  // Populate dan return
+  return await Group.findById(group._id)
+    .populate("ketua", "name email")
+    .populate("anggota", "name email")
+    .populate("dosen", "name email");
+};
+
+exports.reportIssue = async (groupId, userId, description) => {
+  const group = await Group.findById(groupId);
+  if (!group) throw new Error("Group not found");
+
+  // Validasi: hanya ketua yang bisa report issue
+  if (group.ketua.toString() !== userId) {
+    throw new Error("Only ketua can report issues");
+  }
+
+  // Validasi: description harus ada
+  if (!description || description.trim() === "") {
+    throw new Error("Issue description is required");
+  }
+
+  // Update report issue
+  group.reportIssue = {
+    hasIssue: true,
+    description,
+    reportedAt: new Date()
+  };
+
+  await group.save();
+
+  // Populate dan return
+  return await Group.findById(group._id)
+    .populate("ketua", "name email")
+    .populate("anggota", "name email")
+    .populate("dosen", "name email");
+};
+
+exports.getReportedGroups = async () => {
+  // Get all groups yang ada reportIssue.hasIssue = true
+  const reportedGroups = await Group.find({ "reportIssue.hasIssue": true })
+    .select("namaTim reportIssue") // Hanya ambil field yang dibutuhkan
+    .sort({ "reportIssue.reportedAt": -1 }); // Sort by newest report first
+
+  return {
+    total: reportedGroups.length,
+    groups: reportedGroups.map(group => ({
+      _id: group._id,
+      namaTim: group.namaTim,
+      reportIssue: {
+        description: group.reportIssue.description,
+        reportedAt: group.reportIssue.reportedAt
+      }
+    }))
+  };
+};
+
+exports.resolveReportedIssue = async (groupId) => {
+  const group = await Group.findById(groupId);
+  if (!group) throw new Error("Group not found");
+
+  // Reset report issue
+  group.reportIssue = {
+    hasIssue: false,
+    description: "",
+    reportedAt: null
+  };
+
+  await group.save();
+
+  // Return minimal data
+  return {
+    _id: group._id,
+    namaTim: group.namaTim,
+    reportIssue: group.reportIssue
+  };
+};
+
+exports.getGroupStats = async () => {
+  const totalGroups = await Group.countDocuments();
+  
+  // Groups by year
+  const groupsByYear = await Group.aggregate([
+    {
+      $group: {
+        _id: "$tahun",
+        count: { $sum: 1 }
+      }
+    },
+    {
+      $sort: { _id: -1 }
+    }
+  ]);
+
+  // Groups by member count
+  const groupsBySize = await Group.aggregate([
+    {
+      $project: {
+        memberCount: {
+          $add: [
+            1, // ketua
+            { $size: { $ifNull: ["$anggota", []] } } // anggota
+          ]
+        }
+      }
+    },
+    {
+      $group: {
+        _id: "$memberCount",
+        count: { $sum: 1 }
+      }
+    },
+    {
+      $sort: { _id: 1 }
+    }
+  ]);
+
+  // Groups with capstone requests
+  const groupsWithRequests = await Request.distinct("group");
+  const groupsWithRequestsCount = groupsWithRequests.length;
+  const groupsWithoutRequests = totalGroups - groupsWithRequestsCount;
+
+  // Request status breakdown
+  const pendingRequests = await Request.countDocuments({ status: "Menunggu Review" });
+  const approvedRequests = await Request.countDocuments({ status: "Diterima" });
+  const rejectedRequests = await Request.countDocuments({ status: "Ditolak" });
+
+  // Groups with approved capstones
+  const groupsWithApprovedCapstone = await Request.distinct("group", { status: "Diterima" });
+  const groupsWithApprovedCount = groupsWithApprovedCapstone.length;
+
+  return {
+    totalGroups,
+    byYear: groupsByYear.reduce((acc, item) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {}),
+    byMemberCount: groupsBySize.reduce((acc, item) => {
+      acc[`${item._id} members`] = item.count;
+      return acc;
+    }, {}),
+    capstoneRequests: {
+      groupsWithRequests: groupsWithRequestsCount,
+      groupsWithoutRequests,
+      groupsWithApprovedCapstone: groupsWithApprovedCount
+    },
+    requestStatus: {
+      pending: pendingRequests,
+      approved: approvedRequests,
+      rejected: rejectedRequests,
+      total: pendingRequests + approvedRequests + rejectedRequests
+    }
+  };
 };

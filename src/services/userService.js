@@ -169,3 +169,55 @@ exports.getUserById = async (userId) => {
 exports.deleteUser = async (userId) => {
   return User.findByIdAndDelete(userId);
 };
+
+exports.getUserStats = async () => {
+  const totalUsers = await User.countDocuments();
+  
+  // Count by role
+  const admin = await User.countDocuments({ role: "admin" });
+  const dosen = await User.countDocuments({ role: "dosen" });
+  const alumni = await User.countDocuments({ role: "alumni" });
+  const mahasiswa = await User.countDocuments({ role: "mahasiswa" });
+  const guest = await User.countDocuments({ role: "guest" });
+  
+  // Count by verification status
+  const verified = await User.countDocuments({ isVerified: true });
+  const unverified = await User.countDocuments({ isVerified: false });
+  
+  // Count by claim status
+  const claimed = await User.countDocuments({ isClaimed: true });
+  const unclaimed = await User.countDocuments({ isClaimed: false });
+  
+  // Users with NIM (mahasiswa/alumni)
+  const withNIM = await User.countDocuments({ nim: { $ne: null, $exists: true } });
+  const withoutNIM = await User.countDocuments({ 
+    $or: [
+      { nim: null },
+      { nim: { $exists: false } }
+    ],
+    role: { $in: ["mahasiswa", "alumni"] }
+  });
+
+  return {
+    totalUsers,
+    byRole: {
+      admin,
+      dosen,
+      alumni,
+      mahasiswa,
+      guest
+    },
+    byVerification: {
+      verified,
+      unverified
+    },
+    byClaimStatus: {
+      claimed,
+      unclaimed
+    },
+    academicData: {
+      withNIM,
+      withoutNIM
+    }
+  };
+};

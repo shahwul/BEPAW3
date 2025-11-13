@@ -36,6 +36,18 @@ const GroupSchema = new mongoose.Schema({
   linkCVGabungan: { 
     type: String, 
     required: false 
+  },
+  reportIssue: {
+    hasIssue: {
+      type: Boolean,
+      default: false
+    },
+    description: {
+      type: String
+    },
+    reportedAt: {
+      type: Date
+    }
   }
 });
 
