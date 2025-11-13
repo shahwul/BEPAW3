@@ -4,14 +4,27 @@ const path = require('path');
 
 /**
  * Upload single image to Cloudinary
- * @param {Object} file - File object from multer
+ * @param {Object} file - File object from multer (supports both disk and memory storage)
  * @param {String} folder - Cloudinary folder name (e.g., 'capstone-hasil')
  * @returns {Object} - { success, url, publicId, error }
  */
 exports.uploadImage = async (file, folder = 'capstone') => {
   try {
+    let uploadSource;
+    
+    // Check if file is from memory storage (buffer) or disk storage (path)
+    if (file.buffer) {
+      // Memory storage - convert buffer to base64
+      uploadSource = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    } else if (file.path) {
+      // Disk storage - use file path
+      uploadSource = file.path;
+    } else {
+      throw new Error('Invalid file object - no buffer or path');
+    }
+
     // Upload to Cloudinary with transformations
-    const result = await cloudinary.uploader.upload(file.path, {
+    const result = await cloudinary.uploader.upload(uploadSource, {
       folder: folder,
       resource_type: 'image',
       transformation: [
@@ -21,8 +34,10 @@ exports.uploadImage = async (file, folder = 'capstone') => {
       ]
     });
 
-    // Delete temp file after upload
-    fs.unlinkSync(file.path);
+    // Delete temp file after upload (only for disk storage)
+    if (file.path && fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
+    }
 
     return {
       success: true,
@@ -34,8 +49,8 @@ exports.uploadImage = async (file, folder = 'capstone') => {
       bytes: result.bytes
     };
   } catch (error) {
-    // Delete temp file if upload failed
-    if (fs.existsSync(file.path)) {
+    // Delete temp file if upload failed (only for disk storage)
+    if (file.path && fs.existsSync(file.path)) {
       fs.unlinkSync(file.path);
     }
 
@@ -48,7 +63,7 @@ exports.uploadImage = async (file, folder = 'capstone') => {
 
 /**
  * Upload multiple images to Cloudinary (max 2 for hasil)
- * @param {Array} files - Array of file objects from multer
+ * @param {Array} files - Array of file objects from multer (supports both disk and memory storage)
  * @param {String} folder - Cloudinary folder name
  * @param {Number} maxFiles - Maximum number of files allowed
  * @returns {Object} - { success, urls, errors }
@@ -57,9 +72,9 @@ exports.uploadMultipleImages = async (files, folder = 'capstone', maxFiles = 2) 
   try {
     // Validate max files
     if (files.length > maxFiles) {
-      // Delete all temp files
+      // Delete all temp files (only for disk storage)
       files.forEach(file => {
-        if (fs.existsSync(file.path)) {
+        if (file.path && fs.existsSync(file.path)) {
           fs.unlinkSync(file.path);
         }
       });
@@ -90,9 +105,9 @@ exports.uploadMultipleImages = async (files, folder = 'capstone', maxFiles = 2) 
       images: successResults
     };
   } catch (error) {
-    // Cleanup temp files on error
+    // Cleanup temp files on error (only for disk storage)
     files.forEach(file => {
-      if (fs.existsSync(file.path)) {
+      if (file.path && fs.existsSync(file.path)) {
         fs.unlinkSync(file.path);
       }
     });
@@ -174,5 +189,39 @@ exports.extractPublicId = (url) => {
     return publicId;
   } catch (error) {
     return null;
+  }
+};
+
+/**
+ * Upload PDF file to Cloudinary
+ * @param {Object} file - Multer file object
+ * @param {string} folder - Cloudinary folder name
+ * @returns {Promise<{success: boolean, url?: string, error?: string}>}
+ */
+exports.uploadPDF = async (file, folder = 'capstone-proposals') => {
+  try {
+    const result = await cloudinary.uploader.upload(file.path, {
+      folder: folder,
+      resource_type: 'image', // Use 'image' for PDF to enable browser preview
+      public_id: `proposal-${Date.now()}`
+    });
+
+    // Delete temp file after upload
+    fs.unlinkSync(file.path);
+
+    return {
+      success: true,
+      url: result.secure_url,
+      publicId: result.public_id
+    };
+  } catch (error) {
+    // Clean up temp file on error
+    if (fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
+    }
+    return {
+      success: false,
+      error: error.message
+    };
   }
 };

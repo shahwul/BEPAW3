@@ -41,9 +41,10 @@ Base URL: `http://localhost:5000/api`
 | Method | Endpoint | Auth Required | Role | Description |
 |--------|----------|---------------|------|-------------|
 | POST | `/` | ✅ | admin | Create new capstone |
-| GET | `/search` | ✅ | All | Search capstones (filter & sort) |
-| GET | `/` | ✅ | All | Get all capstones |
-| GET | `/:id` | ✅ | All | Get capstone detail (access control for linkProposal) |
+| GET | `/stats` | ✅ | admin | Get capstone request statistics |
+| GET | `/search` | ⚠️ Optional | All | Search capstones (filter & sort) |
+| GET | `/` | ⚠️ Optional | All | Get all capstones |
+| GET | `/:id` | ⚠️ Optional | All | Get capstone detail (access control for proposalUrl) |
 | PUT | `/:id` | ✅ | admin | Update capstone |
 | DELETE | `/:id` | ✅ | admin | Delete capstone |
 
@@ -604,6 +605,7 @@ Content-Type: multipart/form-data
 **Required Role:** `admin`
 
 **Request Body (multipart/form-data):**
+
 ```
 judul: "Sistem Pengelolaan Sampah Terpadu"
 kategori: "Pengolahan Sampah"              // Wajib: "Pengolahan Sampah", "Smart City", atau "Transportasi Ramah Lingkungan"
@@ -611,8 +613,7 @@ ketua: "673abc..."                           // User ID (alumni)
 anggota: ["673def...", "673ghi..."]          // Array of User IDs (alumni)
 dosen: "673xyz..."                           // User ID (dosen/admin)
 abstrak: "Deskripsi lengkap capstone..."
-linkProposal: "https://drive.google.com/..."
-hasilDeskripsi: "Deskripsi hasil project"    // Optional
+proposal: file.pdf                           // Upload PDF proposal ke Cloudinary (max 10MB)
 gambar: [file1, file2]                       // Optional, max 2 images (jpeg/jpg/png/gif/webp, max 5MB each)
 ```
 
@@ -625,8 +626,7 @@ curl -X POST http://localhost:5000/api/capstones \
   -F "ketua=673abc..." \
   -F "dosen=673xyz..." \
   -F "abstrak=Deskripsi lengkap capstone..." \
-  -F "linkProposal=https://drive.google.com/..." \
-  -F "hasilDeskripsi=Hasil implementasi project" \
+  -F "proposal=@/path/to/proposal.pdf" \
   -F "gambar=@/path/to/image1.jpg" \
   -F "gambar=@/path/to/image2.png"
 ```
@@ -635,14 +635,13 @@ curl -X POST http://localhost:5000/api/capstones \
 ```javascript
 const formData = new FormData();
 formData.append('judul', 'Sistem Transportasi Cerdas');
-formData.append('kategori', 'Transportasi Ramah Lingkungan');  // Salah satu dari 3 kategori
+formData.append('kategori', 'Transportasi Ramah Lingkungan');
 formData.append('ketua', ketuaId);
 formData.append('dosen', dosenId);
 formData.append('abstrak', 'Deskripsi lengkap...');
-formData.append('linkProposal', 'https://drive.google.com/...');
-formData.append('hasilDeskripsi', 'Hasil implementasi project');
-formData.append('gambar', file1);  // File object
-formData.append('gambar', file2);  // File object (optional)
+formData.append('proposal', pdfFile);    // PDF file upload
+formData.append('gambar', imageFile1);   // Optional
+formData.append('gambar', imageFile2);   // Optional
 
 fetch('/api/capstones', {
   method: 'POST',
@@ -677,14 +676,11 @@ fetch('/api/capstones', {
     "email": "dosen@ugm.ac.id"
   },
   "abstrak": "Deskripsi lengkap capstone...",
-  "linkProposal": "https://drive.google.com/...",
-  "hasil": {
-    "deskripsi": "Hasil implementasi project",
-    "gambar": [
-      "https://res.cloudinary.com/.../image1.jpg",
-      "https://res.cloudinary.com/.../image2.png"
-    ]
-  },
+  "proposal": "https://res.cloudinary.com/.../proposal.pdf",
+  "hasil": [
+    "https://res.cloudinary.com/.../image1.jpg",
+    "https://res.cloudinary.com/.../image2.png"
+  ],
   "status": "Tersedia",
   "createdAt": "2025-11-12T10:00:00.000Z",
   "updatedAt": "2025-11-12T10:00:00.000Z"
@@ -715,30 +711,64 @@ fetch('/api/capstones', {
 ```
 
 **Notes:**
-- **Upload gambar opsional** - bisa create capstone tanpa gambar
+- **Upload proposal PDF** ke Cloudinary (max 10MB, format: PDF)
+- **Upload gambar hasil opsional** - bisa create capstone tanpa gambar
 - **Kategori wajib** salah satu dari: "Pengolahan Sampah", "Smart City", "Transportasi Ramah Lingkungan"
 - **Max 2 gambar** dengan format: jpeg, jpg, png, gif, webp
-- **Max file size:** 5MB per gambar
-- **Gambar di-upload ke Cloudinary** dan URL disimpan di database
-- **Auto-optimization:** Resize max 1200x1200, auto quality, WebP conversion
+- **Max file size:** 5MB per gambar, 10MB untuk PDF
+- **Proposal dan gambar di-upload ke Cloudinary** dan URL disimpan di database
+- **Auto-optimization gambar:** Resize max 1200x1200, auto quality, WebP conversion
 - Ketua & anggota harus role `alumni`
 - Dosen harus role `dosen` atau `admin`
 - Ketua TIDAK boleh ada di array anggota
 
 ---
 
-### 2. Get All Capstones
+### 2. Get Capstone Statistics
 
-**GET** `/api/capstones`
+**GET** `/api/capstones/stats`
 
-Get semua capstones.
+Get statistik capstone untuk admin dashboard.
 
 **Headers:**
 ```
-Authorization: Bearer {token}
+Authorization: Bearer {admin_token}
 ```
 
-**Required Role:** All authenticated users
+**Required Role:** `admin`
+
+**Response Success (200):**
+```json
+{
+  "totalCapstones": 50,
+  "tersedia": 35,
+  "tidakTersedia": 15,
+  "fullyRequested": 8,
+  "noRequests": 20,
+  "partiallyRequested": 22
+}
+```
+
+**Notes:**
+- `fullyRequested`: Capstone dengan >= 3 pending request
+- `noRequests`: Capstone tanpa request sama sekali
+- `partiallyRequested`: Capstone dengan 1-2 pending request
+- Hanya admin yang bisa akses endpoint ini
+
+---
+
+### 3. Get All Capstones
+
+**GET** `/api/capstones`
+
+Get semua capstones (public access).
+
+**Headers:**
+```
+Authorization: Bearer {token}  // Optional
+```
+
+**Required Role:** None (public), optional auth for proposalUrl access
 
 **Response Success (200):**
 ```json
@@ -762,6 +792,7 @@ Authorization: Bearer {token}
       }
     ],
     "dosen": {...},
+    "hasil": [],
     "status": "Tersedia",
     "createdAt": "2025-11-12T10:00:00.000Z"
   }
@@ -769,14 +800,18 @@ Authorization: Bearer {token}
 ```
 
 **Notes:**
-- linkProposal TIDAK ditampilkan di list (hanya di detail dengan access control)
+- `proposal` TIDAK ditampilkan di list (hanya di detail dengan access control)
 - Ketua, anggota, dan dosen di-populate dengan data user
 - Status: "Tersedia" atau "Tidak Tersedia"
+  - "Tersedia": Capstone bisa dipilih
+  - "Tidak Tersedia": Capstone sudah dipilih oleh group (approved) atau sudah ada >= 3 pending request
 - Kategori: "Pengolahan Sampah", "Smart City", atau "Transportasi Ramah Lingkungan"
+- `hasil` array kosong [] jika tidak ada gambar
+- **Public Access**: Bisa diakses tanpa login, tapi `proposalUrl` hanya muncul untuk user dengan akses
 
 ---
 
-### 3. Search Capstones
+### 4. Search Capstones
 
 **GET** `/api/capstones/search`
 
@@ -784,10 +819,10 @@ Search dan filter capstones.
 
 **Headers:**
 ```
-Authorization: Bearer {token}
+Authorization: Bearer {token}  // Optional
 ```
 
-**Required Role:** All authenticated users
+**Required Role:** None (public), optional auth for proposalUrl access
 
 **Query Parameters:**
 - `judul` (optional) - Filter by judul (case-insensitive, partial match)
@@ -863,7 +898,10 @@ Authorization: Bearer {token}
   "anggota": [...],
   "dosen": {...},
   "abstrak": "Deskripsi lengkap capstone...",
-  "linkProposal": "https://drive.google.com/...",  // ← Visible
+  "proposal": "https://res.cloudinary.com/.../proposal.pdf",  // ← Visible for admin/approved groups
+  "hasil": [
+    "https://res.cloudinary.com/.../image1.jpg"
+  ],
   "status": "Tersedia",
   "createdAt": "2025-11-12T10:00:00.000Z",
   "updatedAt": "2025-11-12T10:00:00.000Z"
@@ -880,7 +918,8 @@ Authorization: Bearer {token}
   "anggota": [...],
   "dosen": {...},
   "abstrak": "Deskripsi lengkap capstone...",
-  // linkProposal NOT included
+  // proposal NOT included
+  "hasil": [],
   "status": "Tersedia",
   "createdAt": "2025-11-12T10:00:00.000Z",
   "updatedAt": "2025-11-12T10:00:00.000Z"
@@ -895,10 +934,11 @@ Authorization: Bearer {token}
 ```
 
 **Notes:**
-- **linkProposal hanya visible untuk:**
+- **`proposal` hanya visible untuk:**
   - Admin
   - Members dari group yang sudah approved untuk capstone ini
 - Access control dilakukan di service layer
+- `hasil` array kosong [] jika tidak ada gambar
 
 ---
 
@@ -930,10 +970,9 @@ ketua: "673new..."
 anggota: ["673x...", "673y..."]
 dosen: "673z..."
 abstrak: "Updated abstrak"
-linkProposal: "https://drive.google.com/new-link"
 status: "Tidak Tersedia"                     // "Tersedia" atau "Tidak Tersedia"
-hasilDeskripsi: "Updated deskripsi hasil"
-gambar: [newFile1, newFile2]                 // Optional, upload gambar baru (auto replace gambar lama)
+proposal: newProposal.pdf                    // Upload PDF baru (auto replace yang lama)
+gambar: [newFile1, newFile2]                 // Upload gambar baru (auto replace yang lama, max 2)
 ```
 
 **JavaScript Example:**
@@ -941,9 +980,9 @@ gambar: [newFile1, newFile2]                 // Optional, upload gambar baru (au
 ```javascript
 const formData = new FormData();
 formData.append('judul', 'Updated Judul');
-formData.append('hasilDeskripsi', 'Updated hasil deskripsi');
-formData.append('gambar', newFile1);  // Replace gambar lama
-formData.append('gambar', newFile2);
+formData.append('proposal', newPdfFile);  // Replace proposal lama
+formData.append('gambar', newImage1);     // Replace gambar lama
+formData.append('gambar', newImage2);
 
 fetch(`/api/capstones/${capstoneId}`, {
   method: 'PUT',
@@ -965,14 +1004,11 @@ fetch(`/api/capstones/${capstoneId}`, {
   "anggota": [...],
   "dosen": {...},
   "abstrak": "Updated abstrak",
-  "linkProposal": "https://drive.google.com/new-link",
-  "hasil": {
-    "deskripsi": "Updated deskripsi hasil",
-    "gambar": [
-      "https://res.cloudinary.com/.../new-image1.jpg",
-      "https://res.cloudinary.com/.../new-image2.png"
-    ]
-  },
+  "proposal": "https://res.cloudinary.com/.../new-proposal.pdf",
+  "hasil": [
+    "https://res.cloudinary.com/.../new-image1.jpg",
+    "https://res.cloudinary.com/.../new-image2.png"
+  ],
   "status": "Tidak Tersedia",
   "updatedAt": "2025-11-12T15:00:00.000Z"
 }
@@ -997,6 +1033,7 @@ fetch(`/api/capstones/${capstoneId}`, {
 **Notes:**
 
 - Hanya admin yang bisa update
+- **Upload proposal PDF baru otomatis delete proposal lama dari Cloudinary**
 - **Upload gambar baru otomatis delete gambar lama dari Cloudinary**
 - Ketua tidak boleh ada di array anggota
 - Semua field optional - kirim hanya yang ingin diupdate
@@ -1052,7 +1089,7 @@ Authorization: Bearer {admin_token}
 
 **Notes:**
 
-- **Auto delete gambar hasil dari Cloudinary** sebelum delete capstone dari database
+- **Auto delete proposal PDF dan gambar hasil dari Cloudinary** sebelum delete capstone dari database
 - Hanya admin yang bisa delete
 
 ---

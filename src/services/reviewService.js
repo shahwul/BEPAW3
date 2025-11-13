@@ -30,10 +30,11 @@ exports.reviewGroup = async (requestId, status, alumniId) => {
   request.status = status;
   await request.save();
 
-  // Update status capstone jika diterima
+  // Update status capstone berdasarkan kondisi
   if (status === "Diterima") {
+    // Jika diterima, capstone jadi "Tidak Tersedia"
     const capstone = await Capstone.findById(request.capstone);
-    capstone.status = "Dipilih";
+    capstone.status = "Tidak Tersedia";
     await capstone.save();
 
     // Tolak semua request lain yang masih menunggu review untuk capstone ini
@@ -45,6 +46,17 @@ exports.reviewGroup = async (requestId, status, alumniId) => {
       },
       { status: "Ditolak" }
     );
+  } else if (status === "Ditolak") {
+    // Jika ditolak, cek apakah masih ada >= 3 pending request
+    const pendingCount = await Request.countDocuments({
+      capstone: request.capstone._id,
+      status: "Menunggu Review"
+    });
+    
+    // Jika pending request < 3, kembalikan status ke "Tersedia"
+    if (pendingCount < 3) {
+      await Capstone.findByIdAndUpdate(request.capstone._id, { status: "Tersedia" });
+    }
   }
 
   // Kirim notifikasi ke ketua kelompok tentang hasil review

@@ -34,24 +34,24 @@ const CapstoneSchema = new mongoose.Schema({
     type: String, 
     required: true 
   },
-  hasil: {
-    deskripsi: String,
-    gambar: {
-      type: [String],  // Array of image URLs from external storage (Cloudinary/Google Drive)
-      validate: {
-        validator: function(arr) {
-          return arr.length <= 2;
-        },
-        message: 'Maksimal 2 gambar hasil'
-      }
-    }
-  },
+  proposal: { type: String },  // URL proposal PDF dari Cloudinary (deprecated - gunakan proposalFileId)
+  proposalFileId: { type: String },  // Google Drive File ID
+  proposalUrl: { type: String },  // Google Drive Web View Link (cached)
   status: { 
     type: String, 
     enum: ["Tersedia", "Tidak Tersedia"], 
     default: "Tersedia" 
   },
-  linkProposal: { type: String }  // Link ke proposal (Google Drive, OneDrive, dll) - optional
+  hasil: {
+    type: [String],  // Array of image URLs from external storage (Cloudinary/Google Drive)
+    default: [],  // Default empty array
+    validate: {
+      validator: function(arr) {
+        return arr.length <= 2;
+      },
+      message: 'Maksimal 2 gambar hasil'
+    }
+  }
 });
 
 module.exports = mongoose.model("Capstone", CapstoneSchema);

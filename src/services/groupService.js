@@ -108,6 +108,16 @@ exports.chooseCapstone = async (groupId, capstoneId, alasan) => {
   });
   await relation.save();
 
+  // Update status capstone jika sudah ada 3 pending request
+  const pendingCount = await Request.countDocuments({
+    capstone: capstoneId,
+    status: "Menunggu Review"
+  });
+  
+  if (pendingCount >= 3) {
+    await Capstone.findByIdAndUpdate(capstoneId, { status: "Tidak Tersedia" });
+  }
+
   // notifikasi
   try {
     await notificationService.createNotification({

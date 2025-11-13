@@ -1,8 +1,10 @@
 const Capstone = require("../models/capstone");
 const User = require("../models/user");
 const cloudinaryService = require("./cloudinaryService");
+const drive = require("../config/googleDrive");
+const { Readable } = require("stream");
 
-exports.createCapstone = async ({ judul, kategori, ketua, anggota, dosen, abstrak, linkProposal, hasilDeskripsi }, files = null) => {
+exports.createCapstone = async ({ judul, kategori, ketua, anggota, dosen, abstrak }, files = null) => {
   // Validasi ketua
   const ketuaUser = await User.findById(ketua);
   if (!ketuaUser) throw new Error("Ketua user not found");
@@ -45,18 +47,66 @@ exports.createCapstone = async ({ judul, kategori, ketua, anggota, dosen, abstra
     ketua,
     anggota: anggota || [],
     dosen,
-    abstrak,
-    linkProposal
+    abstrak
   };
 
+  // Upload proposal PDF to Google Drive (required)
+  if (files && files.proposal) {
+    try {
+      // Convert buffer to stream
+      const bufferStream = Readable.from(files.proposal.buffer);
+      
+      // Upload to Google Drive
+      const fileMetadata = {
+        name: `${judul}_proposal_${Date.now()}.pdf`,
+        parents: [process.env.GOOGLE_DRIVE_FOLDER_ID]
+      };
+
+      const media = {
+        mimeType: 'application/pdf',
+        body: bufferStream
+      };
+
+      const driveFile = await drive.files.create({
+        requestBody: fileMetadata,
+        media: media,
+        fields: 'id, name, webViewLink',
+        supportsAllDrives: true
+      });
+
+      capstoneData.proposalFileId = driveFile.data.id;
+      
+      // Set permission to anyone with link can view
+      await drive.permissions.create({
+        fileId: driveFile.data.id,
+        requestBody: {
+          role: 'reader',
+          type: 'anyone'
+        },
+        supportsAllDrives: true
+      });
+
+      // Get shareable link
+      const file = await drive.files.get({
+        fileId: driveFile.data.id,
+        fields: 'webViewLink',
+        supportsAllDrives: true
+      });
+
+      capstoneData.proposalUrl = file.data.webViewLink;
+    } catch (error) {
+      throw new Error(`Gagal upload proposal ke Google Drive: ${error.message}`);
+    }
+  }
+
   // Upload gambar hasil jika ada files
-  if (files && files.length > 0) {
-    if (files.length > 2) {
+  if (files && files.hasil && files.hasil.length > 0) {
+    if (files.hasil.length > 2) {
       throw new Error("Maksimal 2 gambar hasil");
     }
 
     const uploadResult = await cloudinaryService.uploadMultipleImages(
-      files,
+      files.hasil,
       'capstone-hasil',
       2
     );
@@ -65,16 +115,7 @@ exports.createCapstone = async ({ judul, kategori, ketua, anggota, dosen, abstra
       throw new Error(`Gagal upload gambar: ${uploadResult.error}`);
     }
 
-    capstoneData.hasil = {
-      deskripsi: hasilDeskripsi || '',
-      gambar: uploadResult.urls
-    };
-  } else if (hasilDeskripsi) {
-    // Jika hanya ada deskripsi tanpa gambar
-    capstoneData.hasil = {
-      deskripsi: hasilDeskripsi,
-      gambar: []
-    };
+    capstoneData.hasil = uploadResult.urls;
   }
 
   const capstone = new Capstone(capstoneData);
@@ -90,7 +131,18 @@ exports.getAllCapstones = async (userId, userRole) => {
     .populate("anggota", "name email")
     .populate("dosen", "name email");
 
-  // If admin, return all data including linkProposal
+  // If no user (public access), hide proposalUrl
+  if (!userId || !userRole) {
+    return capstones.map(capstone => {
+      const capstoneObj = capstone.toObject();
+      delete capstoneObj.proposalUrl;
+      delete capstoneObj.proposalFileId;
+      delete capstoneObj.linkProposal;
+      return capstoneObj;
+    });
+  }
+
+  // If admin, return all data including proposalUrl
   if (userRole === "admin") {
     return capstones;
   }
@@ -109,14 +161,16 @@ exports.getAllCapstones = async (userId, userRole) => {
 
   const accessibleCapstoneIds = approvedRequests.map(r => r.capstone.toString());
 
-  // Filter out linkProposal for capstones user doesn't have access to
+  // Filter out proposalUrl for capstones user doesn't have access to
   const capstonesWithAccess = capstones.map(capstone => {
     const capstoneObj = capstone.toObject();
     
     const hasAccess = accessibleCapstoneIds.includes(capstoneObj._id.toString());
     
     if (!hasAccess) {
-      delete capstoneObj.linkProposal;
+      delete capstoneObj.proposalUrl;
+      delete capstoneObj.proposalFileId;
+      delete capstoneObj.linkProposal; // backward compatibility
     }
     
     return capstoneObj;
@@ -142,8 +196,12 @@ exports.getCapstoneDetail = async (id, userId, userRole) => {
   // Check if user has access to linkProposal
   let hasAccessToProposal = false;
 
+  // If no user (public access), no access to proposal
+  if (!userId || !userRole) {
+    hasAccessToProposal = false;
+  }
   // Admin always has access
-  if (userRole === "admin") {
+  else if (userRole === "admin") {
     hasAccessToProposal = true;
   } else {
     // Check if user is part of an approved group for this capstone
@@ -164,9 +222,11 @@ exports.getCapstoneDetail = async (id, userId, userRole) => {
     }
   }
 
-  // Remove linkProposal if user doesn't have access
+  // Remove proposalUrl if user doesn't have access
   if (!hasAccessToProposal) {
-    delete capstoneObj.linkProposal;
+    delete capstoneObj.proposalUrl;
+    delete capstoneObj.proposalFileId;
+    delete capstoneObj.linkProposal; // backward compatibility
   }
 
   return capstoneObj;
@@ -181,17 +241,73 @@ exports.updateCapstone = async (capstoneId, updateData, files = null) => {
   if (updateData.kategori !== undefined) capstone.kategori = updateData.kategori;
   if (updateData.abstrak !== undefined) capstone.abstrak = updateData.abstrak;
   if (updateData.status !== undefined) capstone.status = updateData.status;
-  if (updateData.linkProposal !== undefined) capstone.linkProposal = updateData.linkProposal;
+
+  // Upload proposal PDF baru to Google Drive if provided
+  if (files && files.proposal) {
+    try {
+      // Delete old proposal from Google Drive if exists
+      if (capstone.proposalFileId) {
+        await drive.files.delete({
+          fileId: capstone.proposalFileId,
+          supportsAllDrives: true
+        });
+      }
+
+      // Convert buffer to stream
+      const bufferStream = Readable.from(files.proposal.buffer);
+      
+      // Upload to Google Drive
+      const fileMetadata = {
+        name: `${updateData.judul || capstone.judul}_proposal_${Date.now()}.pdf`,
+        parents: [process.env.GOOGLE_DRIVE_FOLDER_ID]
+      };
+
+      const media = {
+        mimeType: 'application/pdf',
+        body: bufferStream
+      };
+
+      const driveFile = await drive.files.create({
+        requestBody: fileMetadata,
+        media: media,
+        fields: 'id, name, webViewLink',
+        supportsAllDrives: true
+      });
+
+      capstone.proposalFileId = driveFile.data.id;
+      
+      // Set permission to anyone with link can view
+      await drive.permissions.create({
+        fileId: driveFile.data.id,
+        requestBody: {
+          role: 'reader',
+          type: 'anyone'
+        },
+        supportsAllDrives: true
+      });
+
+      // Get shareable link
+      const file = await drive.files.get({
+        fileId: driveFile.data.id,
+        fields: 'webViewLink',
+        supportsAllDrives: true
+      });
+
+      capstone.proposalUrl = file.data.webViewLink;
+    } catch (error) {
+      throw new Error(`Gagal upload proposal ke Google Drive: ${error.message}`);
+    }
+  }
 
   // Handle gambar hasil update
-  if (files && files.length > 0) {
-    if (files.length > 2) {
+  if (files && files.hasil && files.hasil.length > 0) {
+    if (files.hasil.length > 2) {
       throw new Error("Maksimal 2 gambar hasil");
     }
 
     // Delete old images from Cloudinary if exist
-    if (capstone.hasil && capstone.hasil.gambar && capstone.hasil.gambar.length > 0) {
-      const oldPublicIds = capstone.hasil.gambar
+    if (capstone.hasil && capstone.hasil.length > 0) {
+      const oldPublicIds = capstone.hasil
         .map(url => cloudinaryService.extractPublicId(url))
         .filter(id => id !== null);
 
@@ -202,7 +318,7 @@ exports.updateCapstone = async (capstoneId, updateData, files = null) => {
 
     // Upload new images
     const uploadResult = await cloudinaryService.uploadMultipleImages(
-      files,
+      files.hasil,
       'capstone-hasil',
       2
     );
@@ -211,18 +327,7 @@ exports.updateCapstone = async (capstoneId, updateData, files = null) => {
       throw new Error(`Gagal upload gambar: ${uploadResult.error}`);
     }
 
-    if (!capstone.hasil) {
-      capstone.hasil = {};
-    }
-    capstone.hasil.gambar = uploadResult.urls;
-  }
-
-  // Update deskripsi hasil jika ada
-  if (updateData.hasilDeskripsi !== undefined) {
-    if (!capstone.hasil) {
-      capstone.hasil = { gambar: [] };
-    }
-    capstone.hasil.deskripsi = updateData.hasilDeskripsi;
+    capstone.hasil = uploadResult.urls;
   }
 
   // Update ketua jika ada
@@ -325,6 +430,17 @@ exports.searchCapstones = async (query, userId, userRole) => {
       .populate("anggota", "name email")
       .populate("dosen", "name email");
 
+    // If no user (public access), hide proposalUrl
+    if (!userId || !userRole) {
+        return capstones.map(capstone => {
+            const capstoneObj = capstone.toObject();
+            delete capstoneObj.proposalUrl;
+            delete capstoneObj.proposalFileId;
+            delete capstoneObj.linkProposal;
+            return capstoneObj;
+        });
+    }
+
     // If admin, return all data including linkProposal
     if (userRole === "admin") {
         return capstones;
@@ -345,7 +461,7 @@ exports.searchCapstones = async (query, userId, userRole) => {
 
     const accessibleCapstoneIds = approvedRequests.map(r => r.capstone.toString());
 
-    // Filter out linkProposal for capstones user doesn't have access to
+    // Filter out proposalUrl for capstones user doesn't have access to
     const capstonesWithAccess = capstones.map(capstone => {
         const capstoneObj = capstone.toObject();
         
@@ -353,7 +469,9 @@ exports.searchCapstones = async (query, userId, userRole) => {
         const hasAccess = accessibleCapstoneIds.includes(capstoneObj._id.toString());
         
         if (!hasAccess) {
-            delete capstoneObj.linkProposal;
+            delete capstoneObj.proposalUrl;
+            delete capstoneObj.proposalFileId;
+            delete capstoneObj.linkProposal; // backward compatibility
         }
         
         return capstoneObj;
@@ -366,9 +484,22 @@ exports.deleteCapstone = async (capstoneId) => {
   const capstone = await Capstone.findById(capstoneId);
   if (!capstone) throw new Error("Capstone not found");
 
+  // Delete proposal from Google Drive if exists
+  if (capstone.proposalFileId) {
+    try {
+      await drive.files.delete({
+        fileId: capstone.proposalFileId,
+        supportsAllDrives: true
+      });
+    } catch (error) {
+      console.error(`Error deleting file from Google Drive: ${error.message}`);
+      // Continue with deletion even if Google Drive deletion fails
+    }
+  }
+
   // Delete gambar hasil from Cloudinary if exist
-  if (capstone.hasil && capstone.hasil.gambar && capstone.hasil.gambar.length > 0) {
-    const publicIds = capstone.hasil.gambar
+  if (capstone.hasil && capstone.hasil.length > 0) {
+    const publicIds = capstone.hasil
       .map(url => cloudinaryService.extractPublicId(url))
       .filter(id => id !== null);
 
@@ -380,4 +511,48 @@ exports.deleteCapstone = async (capstoneId) => {
   // Delete capstone from database
   const deletedCapstone = await Capstone.findByIdAndDelete(capstoneId);
   return deletedCapstone;
+};
+
+exports.getCapstoneRequestStats = async () => {
+  const Request = require("../models/request");
+
+  // Get total capstones
+  const totalCapstones = await Capstone.countDocuments();
+  const tersedia = await Capstone.countDocuments({ status: "Tersedia" });
+  const tidakTersedia = await Capstone.countDocuments({ status: "Tidak Tersedia" });
+
+  // Get pending request counts per capstone
+  const pendingRequestCounts = await Request.aggregate([
+    { $match: { status: "Menunggu Review" } },
+    { $group: { _id: "$capstone", count: { $sum: 1 } } }
+  ]);
+
+  // Count capstones by request status
+  let fullyRequested = 0;
+  let noRequests = 0;
+  
+  const capstoneRequestMap = {};
+  pendingRequestCounts.forEach(item => {
+    capstoneRequestMap[item._id.toString()] = item.count;
+    if (item.count >= 3) fullyRequested++;
+  });
+
+  // Get all capstone IDs to count those with no requests
+  const allCapstoneIds = await Capstone.find().select('_id');
+  allCapstoneIds.forEach(cap => {
+    if (!capstoneRequestMap[cap._id.toString()]) {
+      noRequests++;
+    }
+  });
+
+  const partiallyRequested = totalCapstones - fullyRequested - noRequests;
+
+  return {
+    totalCapstones,
+    tersedia,
+    tidakTersedia,
+    fullyRequested,
+    noRequests,
+    partiallyRequested
+  };
 };
