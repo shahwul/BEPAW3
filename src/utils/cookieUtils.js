@@ -1,19 +1,11 @@
 const cookieOptions = {
-  // Cookie configuration
-  getAccessTokenCookieOptions: () => ({
-    httpOnly: false, // Allow JavaScript access for API calls
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: 'lax', // CSRF protection
-    maxAge: 15 * 60 * 1000, // 15 minutes
-    path: '/'
-  }),
-
-  getRefreshTokenCookieOptions: () => ({
+  // Cookie configuration for single token (1 day)
+  getTokenCookieOptions: () => ({
     httpOnly: true, // Prevent XSS attacks
     secure: process.env.NODE_ENV === 'production', // HTTPS only in production
     sameSite: 'lax', // CSRF protection
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    path: '/api/auth' // Only send to auth endpoints
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+    path: '/'
   }),
 
   // Clear cookie options
@@ -25,53 +17,32 @@ const cookieOptions = {
   })
 };
 
-// Cookie names constants
-const COOKIE_NAMES = {
-  ACCESS_TOKEN: 'accessToken',
-  REFRESH_TOKEN: 'refreshToken'
-};
+// Cookie name constant
+const COOKIE_NAME = 'token';
 
-// Set authentication cookies
-const setAuthCookies = (res, accessToken, refreshToken) => {
-  // Set access token cookie (accessible by JavaScript)
+// Set authentication cookie
+const setAuthCookie = (res, token) => {
   res.cookie(
-    COOKIE_NAMES.ACCESS_TOKEN, 
-    accessToken, 
-    cookieOptions.getAccessTokenCookieOptions()
-  );
-
-  // Set refresh token cookie (httpOnly - secure)
-  res.cookie(
-    COOKIE_NAMES.REFRESH_TOKEN, 
-    refreshToken, 
-    cookieOptions.getRefreshTokenCookieOptions()
+    COOKIE_NAME, 
+    token, 
+    cookieOptions.getTokenCookieOptions()
   );
 };
 
-// Clear authentication cookies
-const clearAuthCookies = (res) => {
-  res.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, cookieOptions.getClearCookieOptions());
-  res.clearCookie(COOKIE_NAMES.REFRESH_TOKEN, cookieOptions.getClearCookieOptions());
+// Clear authentication cookie
+const clearAuthCookie = (res) => {
+  res.clearCookie(COOKIE_NAME, cookieOptions.getClearCookieOptions());
 };
 
-// Get tokens from cookies
-const getTokensFromCookies = (req) => {
-  return {
-    accessToken: req.cookies[COOKIE_NAMES.ACCESS_TOKEN],
-    refreshToken: req.cookies[COOKIE_NAMES.REFRESH_TOKEN]
-  };
-};
-
-// Check if cookies are available
-const hasCookieSupport = (req) => {
-  return req.cookies !== undefined;
+// Get token from cookie
+const getTokenFromCookie = (req) => {
+  return req.cookies[COOKIE_NAME];
 };
 
 module.exports = {
   cookieOptions,
-  COOKIE_NAMES,
-  setAuthCookies,
-  clearAuthCookies,
-  getTokensFromCookies,
-  hasCookieSupport
+  COOKIE_NAME,
+  setAuthCookie,
+  clearAuthCookie,
+  getTokenFromCookie
 };

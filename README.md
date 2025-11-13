@@ -1,10 +1,12 @@
 # CapCon - Capstone Container
 
 ## Deskripsi Aplikasi
+
 CapCon (Capstone Container) aplikasi web yang berfungsi sebagai wadah terpusat untuk memfasilitasi alur informasi dan koordinasi antara **Mahasiswa**, **Alumni**, dan **Admin** dalam pelaksanaan program capstone.
 - **Mahasiswa** dapat menelusuri daftar capstone project yang pernah dikerjakan alumni serta mengajukan permintaan untuk melanjutkan project tersebut.
 - **Alumni** dapat meninjau dan memberikan keputusan terhadap permintaan kelanjutan project yang diajukan oleh mahasiswa.
 - **Admin** berperan dalam mengelola data pengguna, project, serta memastikan proses dan komunikasi antar pihak berjalan dengan lancar.
+
 
 Tujuan utama CAPCON adalah menciptakan sistem informasi capstone yang lebih terintegrasi, transparan, dan efisien, sehingga mendorong keberlanjutan inovasi penelitian mahasiswa di Departemen Teknik Elektro dan Teknologi Informasi (DTETI) UGM.
 
@@ -97,25 +99,56 @@ Struktur project (disederhanakan):
     ``` 
 3. **Buat file `.env` di root directory**
    Contoh isi file `.env`:
-    ```
+    ```env
+    # Server Configuration
     PORT=5000
-    MONGO_URI=mongodb://localhost:27017/capstone_db
-    JWT_SECRET=your_secret_key
-    GOOGLE_CLIENT_ID=xxx
+    NODE_ENV=development
+    
+    # Database
+    MONGODB_URI=mongodb://localhost:27017/bepaw3
+    
+    # JWT Authentication (use strong random string, min 32 characters)
+    JWT_SECRET=your-super-secret-key-minimum-32-characters-long
+    
+    # Email Configuration (for OTP verification)
+    EMAIL_USER=your-email@gmail.com
+    EMAIL_PASS=your-gmail-app-password
+    
+    # Google Drive Integration (optional)
+    GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
     GOOGLE_CLIENT_SECRET=xxx
-    GOOGLE_REDIRECT_URI=xxx
+    GOOGLE_REDIRECT_URI=http://localhost:5000/auth/google/callback
+    
+    # Frontend URL (for CORS)
+    FRONTEND_URL=http://localhost:3000
     ```
+   
+   **Catatan:**
+   - Untuk `EMAIL_PASS`, gunakan **App Password** dari Gmail (bukan password biasa)
+   - `JWT_SECRET` harus minimal 32 karakter untuk keamanan
+   - Set `NODE_ENV=production` saat deploy
 4. **Jalankan aplikasi**
+
     ```bash
     npm start
+    ```
+   
+   atau untuk development dengan auto-reload:
+   
+    ```bash
+    npm run dev
     ```
 
 ---
 
 ## 📚 Dokumentasi API
-Dokumentasi endpoint API dapat ditemukan di [API_ENDPOINTS.md](./API_ENDPOINTS.md).
+
+Dokumentasi lengkap endpoint API dapat ditemukan di:
+- **[API_ENDPOINTS.md](./API_ENDPOINTS.md)** - Complete API reference
+- **[SESSION_AUTHENTICATION.md](./SESSION_AUTHENTICATION.md)** - Authentication & session management
 
 ---
+
 
 ## ✨ Fitur
 * Autentikasi (Login, Register, OTP, Refresh Token)
@@ -124,18 +157,266 @@ Dokumentasi endpoint API dapat ditemukan di [API_ENDPOINTS.md](./API_ENDPOINTS.m
 * Integrasi Google Drive (upload file laporan / dokumen / foto)
 * Notifikasi (request, approval, report)
 
+
 ---
 
 ## 🛠️ Teknologi
-- **Node.js + Express.js** → backend framework  
-- **MongoDB + Mongoose** → database & ODM  
-- **Passport.js** → autentikasi  
-- **JWT (JSON Web Token)** → autentikasi berbasis token  
-- **Google Drive API** → integrasi upload laporan  
-- **OTP Service** → verifikasi pengguna  
-- **cookie-utils** → utilitas cookie
+
+**Backend:**
+- **Node.js + Express.js** → Backend framework  
+- **MongoDB + Mongoose** → Database & ODM dengan sparse unique indexes
+- **JWT (JSON Web Token)** → Token-based authentication (24h expiry)
+- **bcrypt** → Password hashing (salt rounds: 10)
+- **nodemailer** → Email delivery untuk OTP verification
+
+**Authentication:**
+- **OTP Service** → In-memory OTP storage dengan auto-expiry
+- **Cookie-based Auth** → httpOnly cookies untuk security
+- **Passport.js** → Authentication middleware (future: OAuth)
+
+**Integration:**
+- **Google Drive API** → File upload dan storage
+- **cookie-parser** → Cookie parsing middleware
+- **cors** → Cross-Origin Resource Sharing
+
+**Development:**
+- **nodemon** → Auto-reload during development
+- **dotenv** → Environment variable management
 
 ---
 
-## 📄 Laporan
+## 🏗️ Arsitektur
+
+```
+┌─────────────┐
+│   Client    │ (React/Vue Frontend)
+│  (Browser)  │
+└──────┬──────┘
+       │ HTTP + Cookies
+       ▼
+┌─────────────────────────────────────┐
+│     Express.js Server               │
+│  ┌───────────────────────────────┐  │
+│  │  Middlewares                  │  │
+│  │  - CORS                       │  │
+│  │  - Cookie Parser              │  │
+│  │  - Auth (JWT Verification)    │  │
+│  │  - Role (RBAC)                │  │
+│  │  - Group Access               │  │
+│  └───────────────────────────────┘  │
+│  ┌───────────────────────────────┐  │
+│  │  Routes → Controllers         │  │
+│  │  - authRoutes                 │  │
+│  │  - userRoutes                 │  │
+│  │  - capstoneRoutes             │  │
+│  │  - groupRoutes                │  │
+│  │  - reviewRoutes               │  │
+│  │  - notificationRoutes         │  │
+│  └───────────────────────────────┘  │
+│  ┌───────────────────────────────┐  │
+│  │  Services (Business Logic)    │  │
+│  │  - authService (OTP)          │  │
+│  │  - userService                │  │
+│  │  - capstoneService (Search)   │  │
+│  │  - groupService               │  │
+│  │  - reviewService              │  │
+│  │  - notificationService        │  │
+│  └───────────────────────────────┘  │
+└──────────┬──────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────┐
+│     MongoDB (Mongoose ODM)          │
+│  - Users (nim: sparse unique)       │
+│  - Capstones                        │
+│  - Groups (ketua separate)          │
+│  - Requests                         │
+│  - Reviews                          │
+│  - Notifications                    │
+└─────────────────────────────────────┘
+```
+
+---
+
+## 🔒 Security Features
+
+- ✅ **httpOnly Cookies** - Prevents XSS attacks
+- ✅ **bcrypt Password Hashing** - One-way encryption dengan salt
+- ✅ **JWT Token Expiry** - 24 hours automatic expiry
+- ✅ **OTP Email Verification** - Prevents bot registrations
+- ✅ **Email Domain Validation** - UGM email required
+- ✅ **Role-Based Access Control** - Granular permissions
+- ✅ **CORS Configuration** - Cross-origin security
+- ✅ **HTTPS in Production** - Secure cookies
+- ✅ **Sparse Unique Index** - NIM uniqueness without conflicts
+- ✅ **Input Validation** - Mongoose schema validation
+
+---
+
+## � Quick Start Guide
+
+### Untuk Developer
+
+1. **Setup Database**
+   ```bash
+   # Install MongoDB
+   # Start MongoDB service
+   mongod
+   ```
+
+2. **Setup Email (Gmail)**
+   - Enable 2FA di Google Account
+   - Generate App Password di Google Account Settings
+   - Gunakan App Password di `.env` file
+
+3. **First Run**
+   ```bash
+   npm install
+   npm run dev
+   ```
+
+4. **Create Admin User**
+   ```bash
+   # Gunakan MongoDB Compass atau mongo shell
+   db.users.insertOne({
+     email: "admin@ugm.ac.id",
+     password: "$2b$10$hashed_password_here",
+     name: "Admin",
+     role: "admin",
+     isVerified: true,
+     isClaimed: true
+   })
+   ```
+
+### Testing API
+
+Gunakan Postman atau cURL untuk testing:
+
+```bash
+# Register
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@mail.ugm.ac.id","password":"test123"}'
+
+# Verify OTP (check email)
+curl -X POST http://localhost:5000/api/auth/verify-otp \
+  -H "Content-Type: application/json" \
+  -c cookies.txt \
+  -d '{"email":"test@mail.ugm.ac.id","otp":"123456"}'
+
+# Get Capstones (with cookie)
+curl -X GET http://localhost:5000/api/capstones \
+  -b cookies.txt
+```
+
+---
+
+## 🚀 Deployment
+
+### Environment Variables (Production)
+
+Pastikan set semua environment variables di platform deployment (Heroku, Railway, Vercel, dll):
+
+```env
+NODE_ENV=production
+PORT=5000
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/bepaw3
+JWT_SECRET=your-production-secret-min-32-chars
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-app-password
+FRONTEND_URL=https://your-frontend-domain.com
+```
+
+### Security Checklist
+
+- ✅ Set `NODE_ENV=production`
+- ✅ Use strong `JWT_SECRET` (min 32 characters)
+- ✅ Enable HTTPS (secure cookies)
+- ✅ Configure CORS properly
+- ✅ Use MongoDB Atlas with authentication
+- ✅ Enable rate limiting (future enhancement)
+- ✅ Keep dependencies updated
+
+---
+
+## 📚 API Documentation
+
+Dokumentasi lengkap tersedia di:
+
+- **[API_ENDPOINTS.md](./API_ENDPOINTS.md)** - Complete API reference dengan contoh request/response
+- **[SESSION_AUTHENTICATION.md](./SESSION_AUTHENTICATION.md)** - Authentication flow, security, dan best practices
+
+**Endpoint Categories:**
+- 🔐 `/api/auth/*` - Authentication (register, login, verify OTP, logout)
+- 👥 `/api/users/*` - User management (CRUD, role-based)
+- 📚 `/api/capstones/*` - Capstone management (search, filter, CRUD)
+- 👨‍👩‍👦 `/api/groups/*` - Group management (create, join, manage)
+- 📝 `/api/reviews/*` - Review & feedback system
+- 🔔 `/api/notifications/*` - Notification system
+
+---
+
+## 🤝 Contributing
+
+1. Fork repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+**Coding Standards:**
+- Follow existing code structure (controllers, services, routes)
+- Use meaningful variable/function names
+- Add comments for complex logic
+- Test endpoints before committing
+- Update documentation when adding features
+
+---
+
+## 📝 Changelog
+
+### Version 2.0 (Major Update) - November 2025
+- ✅ **Single Token System** - Simplified dari dual-token ke single JWT (24h)
+- ✅ **OTP Email Verification** - Added OTP verification untuk registrasi
+- ✅ **Pre-populated Users** - Admin dapat create user yang dapat di-claim
+- ✅ **Academic Data** - Added NIM dan Prodi fields untuk mahasiswa/alumni
+- ✅ **Minimal Registration** - Hanya email+password required
+- ✅ **Advanced Search** - Filter dan sorting untuk capstone
+- ✅ **Access Control** - Link proposal restriction untuk security
+- ✅ **Data Model Update** - Ketua separated dari anggota array
+- ✅ **Generalized Endpoints** - PATCH /api/users/:id untuk semua field updates
+- ✅ **Complete Documentation** - SESSION_AUTHENTICATION.md added
+
+### Version 1.0 - Initial Release
+- Basic authentication system
+- Capstone CRUD operations
+- Group management
+- Review system
+- Notification system
+- Google Drive integration
+
+---
+
+## �📄 Laporan
+
 Laporan lengkap dapat ditemukan di [Laporan.pdf](https://drive.google.com/file/d/1x-VHX4Dy4iFcgrFt6_LSdF6KcqDMXBUJ/view?usp=sharing).
+
+---
+
+## 📧 Contact
+
+**Kelompok PAW 3**
+- Repository: [github.com/shahwul/BEPAW3](https://github.com/shahwul/BEPAW3)
+- Email: Kontak anggota kelompok melalui email UGM
+
+---
+
+## 📜 License
+
+This project is developed for educational purposes as part of PAW (Pemrograman Aplikasi Web) course at Universitas Gadjah Mada.
+
+---
+
+**Last Updated:** November 12, 2025  
+**Version:** 2.0 (Major Update)  
+**Branch:** `major-update-be`

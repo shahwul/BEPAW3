@@ -1,83 +1,40 @@
-const refreshTokenService = require("../services/refreshTokenService");
+const tokenService = require("../services/tokenService");
 
 const verifyToken = (req, res, next) => {
   // Try to get token from Authorization header first, then from cookie
   const authHeader = req.header("Authorization");
   const headerToken = authHeader && authHeader.split(" ")[1];
-  const cookieToken = req.cookies && req.cookies.accessToken;
+  const cookieToken = req.cookies && req.cookies.token;
   
   const token = headerToken || cookieToken;
   
   if (!token) {
     return res.status(401).json({ 
-      message: "Access token diperlukan",
+      message: "Token diperlukan",
       code: "NO_TOKEN",
       hint: "Sertakan token di Authorization header atau login untuk set cookie"
     });
   }
 
   try {
-    // Verify access token
-    const decoded = refreshTokenService.verifyAccessToken(token);
+    // Verify token
+    const decoded = tokenService.verifyToken(token);
     req.user = decoded;
-
-    // Check if token expires soon (within 5 minutes)
-    if (refreshTokenService.isTokenExpiringSoon(token)) {
-      // Set header to inform client that token is expiring soon
-      res.setHeader('X-Token-Expires-Soon', 'true');
-    }
-
     next();
   } catch (err) {
     // Check if token is expired or invalid
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ 
-        message: "Access token sudah expired",
-        code: "TOKEN_EXPIRED",
-        hint: "Gunakan refresh token untuk mendapatkan access token baru"
+        message: "Token sudah expired, silakan login ulang",
+        code: "TOKEN_EXPIRED"
       });
     }
     
     return res.status(401).json({ 
-      message: "Access token tidak valid",
+      message: "Token tidak valid",
       code: "INVALID_TOKEN" 
     });
   }
 };
 
-// Optional middleware for auto-refresh (can be used selectively)
-const verifyTokenWithAutoRefresh = (req, res, next) => {
-  const authHeader = req.header("Authorization");
-  const token = authHeader && authHeader.split(" ")[1];
-  
-  if (!token) {
-    return res.status(401).json({ 
-      message: "Access token diperlukan",
-      code: "NO_TOKEN"
-    });
-  }
-
-  try {
-    // Try to verify token first
-    const decoded = refreshTokenService.verifyAccessToken(token);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ 
-        message: "Access token sudah expired",
-        code: "TOKEN_EXPIRED",
-        hint: "Silakan refresh token atau login ulang"
-      });
-    }
-    
-    return res.status(401).json({ 
-      message: "Access token tidak valid",
-      code: "INVALID_TOKEN" 
-    });
-  }
-};
-
-// Export dengan benar - verifyToken sebagai default export
 module.exports = verifyToken;
-module.exports.verifyTokenWithAutoRefresh = verifyTokenWithAutoRefresh;

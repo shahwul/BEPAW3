@@ -1,1862 +1,1763 @@
-# BEPAW3 API Documentation
+# 📚 API Endpoints Documentation
 
-## 🎯 System Overview
+Base URL: `http://localhost:5000/api`
 
-**BEPAW3** adalah sistem manajemen capstone project yang menyediakan **27 endpoints** tersebar di **6 modul utama**:
+## 📋 Table of Contents
 
-| **Module** | **Endpoints** | **Description** |
-|------------|---------------|------------------|
-| 🔐 **Auth** | 7 | Authentication & authorization system |
-| 👤 **User** | 4 | User management for admin |
-| 🎓 **Capstone** | 7 | Capstone project management |
-| 👥 **Group** | 4 | Student group management |
-| ⭐ **Review** | 2 | Alumni review system |
-| 🔔 **Notification** | 3 | Real-time notification system |
-
-**Total: 27 endpoints** dengan role-based access control dan Google Drive integration.
-
-### ✨ **Key Features:**
-
-- 🔐 **OTP-based Authentication** dengan Google OAuth support
-- 📁 **Google Drive Integration** dengan Shared Drive compatibility
-- 👥 **Group Management** dengan role-based access control
-- ⭐ **Review System** dengan detail group information
-- 🔔 **Real-time Notifications** untuk status updates
-- 🔍 **Advanced Search** dan filtering capabilities
-- 🚀 **Memory-based File Upload** untuk optimal performance
+- [Endpoint Overview](#-endpoint-overview)
+- [Authentication](#-authentication)
+- [Users](#-users)
+- [Capstones](#-capstones)
+- [Groups](#-groups)
+- [Reviews](#-reviews)
+- [Notifications](#-notifications)
 
 ---
 
-## 🔐 Authentication Endpoints
+## 📊 Endpoint Overview
 
-### 📋 **Authentication API Endpoints**
+### 🔐 Authentication (`/api/auth`)
 
-| **Method** | **Endpoint** | **Description** | **Auth Required** | **Role** |
-|------------|--------------|-----------------|-------------------|----------|
-| `POST` | `/api/auth/register` | User registration | ❌ | None |
-| `POST` | `/api/auth/verify-otp` | Verify OTP code | ❌ | None |
-| `POST` | `/api/auth/login` | User login | ❌ | None |
-| `POST` | `/api/auth/refresh` | Refresh access token | 🔄 | Refresh Token |
-| `POST` | `/api/auth/logout` | User logout | ✅ | Any |
-| `GET` | `/api/auth/google` | Google OAuth login | ❌ | None |
-| `GET` | `/api/auth/google/callback` | Google OAuth callback | 🔄 | OAuth Flow |
+| Method | Endpoint | Auth Required | Role | Description |
+|--------|----------|---------------|------|-------------|
+| POST | `/register` | ❌ | - | Register user baru dengan OTP |
+| POST | `/verify-otp` | ❌ | - | Verify OTP setelah register |
+| POST | `/login` | ❌ | - | Login dengan email & password |
+| POST | `/logout` | ✅ | All | Logout user |
+
+### 👥 Users (`/api/users`)
+
+| Method | Endpoint | Auth Required | Role | Description |
+|--------|----------|---------------|------|-------------|
+| POST | `/` | ✅ | admin | Create pre-populated user |
+| POST | `/bulk` | ✅ | admin | Bulk create pre-populated users |
+| GET | `/` | ✅ | admin, dosen | Get all users |
+| GET | `/:id` | ✅ | admin, dosen | Get user by ID |
+| PATCH | `/:id` | ✅ | admin | Update user (role, name, email, nim, prodi, etc) |
+| DELETE | `/:id` | ✅ | admin | Delete user |
+
+### 📚 Capstones (`/api/capstones`)
+
+| Method | Endpoint | Auth Required | Role | Description |
+|--------|----------|---------------|------|-------------|
+| POST | `/` | ✅ | admin | Create new capstone |
+| GET | `/stats` | ✅ | admin | Get capstone request statistics |
+| GET | `/search` | ⚠️ Optional | All | Search capstones (filter & sort) |
+| GET | `/` | ⚠️ Optional | All | Get all capstones |
+| GET | `/:id` | ⚠️ Optional | All | Get capstone detail (access control for proposalUrl) |
+| PUT | `/:id` | ✅ | admin | Update capstone |
+| DELETE | `/:id` | ✅ | admin | Delete capstone |
+
+### 👨‍👩‍👦 Groups (`/api/groups`)
+
+| Method | Endpoint | Auth Required | Role | Description |
+|--------|----------|---------------|------|-------------|
+| POST | `/` | ✅ | admin | Create new group |
+| GET | `/:id` | ✅ | All | Get group detail |
+| PUT | `/:id` | ✅ | admin | Update group |
+| DELETE | `/:id` | ✅ | admin | Delete group |
+| POST | `/:id/pilih` | ✅ | mahasiswa (ketua) | Ketua pilih capstone untuk group |
+
+### 📝 Reviews (`/api/reviews`)
+
+| Method | Endpoint | Auth Required | Role | Description |
+|--------|----------|---------------|------|-------------|
+| GET | `/pending` | ✅ | alumni | Get pending reviews for alumni's capstones |
+| POST | `/:id` | ✅ | alumni | Alumni review group proposal |
+
+### 🔔 Notifications (`/api/notifications`)
+
+| Method | Endpoint | Auth Required | Role | Description |
+|--------|----------|---------------|------|-------------|
+| POST | `/` | ✅ | All | Create notification |
+| GET | `/` | ✅ | All | Get user's notifications |
+| PATCH | `/:id/read` | ✅ | All | Mark notification as read |
 
 ---
 
-### 1. Register User
+## 🔐 Authentication
 
-**Endpoint:** `POST /api/auth/register`
+Base Path: `/api/auth`
 
-**Authentication:** None required
+### 1. Register
 
-**Request Body:**
+**POST** `/api/auth/register`
 
-```json
-{
-  "name": "John Doe",
-  "email": "john@mail.ugm.ac.id",
-  "password": "securePassword123"
-}
-```
+Register user baru dengan OTP verification.
 
-**Request Headers:**
-
+**Headers:**
 ```
 Content-Type: application/json
 ```
 
-**Response (201 - Success):**
+**Request Body:**
+```json
+{
+  "email": "student@mail.ugm.ac.id",
+  "password": "password123",
+  "name": "John Doe",         // Optional
+  "nim": "22/504042/TK/55111", // Optional (mahasiswa/alumni only)
+  "prodi": "Teknik Komputer"   // Optional (mahasiswa/alumni only)
+}
+```
 
+**Response Success (201):**
 ```json
 {
   "message": "Registrasi berhasil. Cek email untuk kode OTP",
-  "email": "john@mail.ugm.ac.id",
+  "email": "student@mail.ugm.ac.id",
   "needVerification": true
 }
 ```
 
-**Response (400 - Error):**
-
+**Response Error (400):**
 ```json
 {
   "message": "Email sudah terdaftar"
 }
 ```
 
-**Business Rules:**
-
-- Email `@mail.ugm.ac.id` → role `mahasiswa`
-- Email domain lain → role `guest`
-- Password minimum 6 karakter
-- OTP otomatis dikirim ke email
+**Notes:**
+- Email harus domain `@mail.ugm.ac.id` atau `@ugm.ac.id`
+- OTP dikirim ke email dan berlaku 10 menit
+- Role auto-assigned: `@mail.ugm.ac.id` → mahasiswa, `@ugm.ac.id` → dosen
 
 ---
 
 ### 2. Verify OTP
 
-**Endpoint:** `POST /api/auth/verify-otp`
+**POST** `/api/auth/verify-otp`
 
-**Authentication:** None required
+Verify OTP setelah registrasi.
 
-**Request Body:**
-
-```json
-{
-  "email": "john@mail.ugm.ac.id",
-  "otp": "123456"
-}
-```
-
-**Request Headers:**
-
+**Headers:**
 ```
 Content-Type: application/json
 ```
 
-**Response (200 - Success):**
+**Request Body:**
+```json
+{
+  "email": "student@mail.ugm.ac.id",
+  "otp": "123456"
+}
+```
 
+**Response Success (200):**
 ```json
 {
   "message": "OTP berhasil diverifikasi",
   "user": {
-    "_id": "64f7b1234567890abcdef123",
+    "id": "673...",
     "name": "John Doe",
-    "email": "john@mail.ugm.ac.id",
+    "email": "student@mail.ugm.ac.id",
     "role": "mahasiswa",
     "isVerified": true
   },
   "tokenType": "Bearer",
-  "expiresIn": "15m"
+  "expiresIn": 86400
 }
 ```
 
-**Cookies Set:**
+**Set-Cookie:**
+```
+token=eyJhbGc...; HttpOnly; Secure; SameSite=Lax; Max-Age=86400
+```
 
-- `accessToken` (HttpOnly, 15 minutes)
-- `refreshToken` (HttpOnly, 7 days)
-
-**Response (400 - Error):**
-
+**Response Error (400):**
 ```json
 {
   "message": "OTP tidak valid atau sudah expired"
 }
 ```
 
+**Notes:**
+- User otomatis login setelah verify OTP
+- JWT token set di httpOnly cookie (expires 24 jam)
+- Token juga bisa digunakan di header `Authorization: Bearer {token}`
+
 ---
 
 ### 3. Login
 
-**Endpoint:** `POST /api/auth/login`
+**POST** `/api/auth/login`
 
-**Authentication:** None required
+Login dengan email dan password.
+
+**Headers:**
+```
+Content-Type: application/json
+```
 
 **Request Body:**
-
 ```json
 {
-  "email": "john@mail.ugm.ac.id",
-  "password": "securePassword123"
+  "email": "student@mail.ugm.ac.id",
+  "password": "password123"
 }
 ```
 
-**Response (200 - Success):**
-
+**Response Success (200):**
 ```json
 {
   "message": "Login berhasil",
   "user": {
-    "_id": "64f7b1234567890abcdef123",
+    "id": "673...",
     "name": "John Doe",
-    "email": "john@mail.ugm.ac.id",
+    "email": "student@mail.ugm.ac.id",
     "role": "mahasiswa",
     "isVerified": true
   },
   "tokenType": "Bearer",
-  "expiresIn": "15m"
+  "expiresIn": 86400
 }
 ```
+
+**Set-Cookie:**
+```
+token=eyJhbGc...; HttpOnly; Secure; SameSite=Lax; Max-Age=86400
+```
+
+**Response Error (400):**
+```json
+{
+  "message": "Email tidak ditemukan"
+}
+// or
+{
+  "message": "Password salah"
+}
+// or
+{
+  "message": "Email belum diverifikasi"
+}
+```
+
+**Notes:**
+- Email harus domain UGM (kecuali user dengan role `admin` di database)
+- User harus sudah verified (OTP)
+- JWT token expires dalam 24 jam
 
 ---
 
-### 4. Refresh Token
+### 4. Logout
 
-**Endpoint:** `POST /api/auth/refresh`
+**POST** `/api/auth/logout`
 
-**Authentication:** Refresh Token (Cookie or Body)
+Logout user (clear cookie).
 
-**Request Body (Optional):**
-
-```json
-{
-  "refreshToken": "your-refresh-token-here"
-}
+**Headers:**
+```
+Authorization: Bearer {token}
+// or cookie auto-sent
 ```
 
-**Request Headers:**
-
-```
-Cookie: refreshToken=your-refresh-token-here
-```
-
-**Response (200 - Success):**
-
-```json
-{
-  "message": "Token refreshed",
-  "user": {
-    "_id": "64f7b1234567890abcdef123",
-    "name": "John Doe",
-    "role": "mahasiswa"
-  },
-  "tokenType": "Bearer",
-  "expiresIn": "15m"
-}
-```
-
----
-
-### 5. Logout
-
-**Endpoint:** `POST /api/auth/logout`
-
-**Authentication:** Bearer Token or Cookie
-
-**Request Headers:**
-
-```
-Authorization: Bearer <access-token>
-Cookie: accessToken=<token>; refreshToken=<refresh-token>
-```
-
-**Response (200 - Success):**
-
+**Response Success (200):**
 ```json
 {
   "message": "Logout berhasil"
 }
 ```
 
-**Cookies Cleared:**
-
-- `accessToken` 
-- `refreshToken`
-
----
-
-### 6. Google OAuth
-
-**Endpoint:** `GET /api/auth/google`
-
-**Authentication:** None required
-
-**Response:** Redirect to Google OAuth consent screen
-
----
-
-### 7. Google OAuth Callback
-
-**Endpoint:** `GET /api/auth/google/callback`
-
-**Authentication:** Google OAuth flow
-
-**Response (200 - Success):**
-
-```json
-{
-  "token": "jwt-token-here",
-  "role": "mahasiswa"
-}
+**Clear-Cookie:**
+```
+token=; Max-Age=0
 ```
 
 ---
 
-## 👤 User Management Endpoints
+## 👥 Users
 
-### 📋 **User Management API Endpoints**
+Base Path: `/api/users`
 
-| **Method** | **Endpoint** | **Description** | **Auth Required** | **Role** |
-|------------|--------------|-----------------|-------------------|----------|
-| `GET` | `/api/users` | Get all users | ✅ | admin |
-| `GET` | `/api/users/:id` | Get user by ID | ✅ | admin |
-| `PATCH` | `/api/users/:id/role` | Update user role | ✅ | admin |
-| `DELETE` | `/api/users/:id` | Delete user | ✅ | admin |
+### 1. Create Pre-Populated User
 
----
+**POST** `/api/users`
 
-### 1. Get All Users
+Admin membuat user yang bisa di-claim nanti (pre-populated).
 
-**Endpoint:** `GET /api/users`
-
-**Authentication:** Bearer Token
-
-**Required Role:** `admin`
-
-**Request Headers:**
-
+**Headers:**
 ```
-Authorization: Bearer <admin-access-token>
-```
-
-**Response (200 - Success):**
-
-```json
-[
-  {
-    "_id": "64f7b1234567890abcdef123",
-    "name": "John Doe",
-    "email": "john@mail.ugm.ac.id",
-    "role": "mahasiswa",
-    "isVerified": true,
-    "createdAt": "2024-09-24T10:30:00.000Z"
-  },
-  {
-    "_id": "64f7b1234567890abcdef124",
-    "name": "Dr. Alumni",
-    "email": "alumni@mail.ugm.ac.id",
-    "role": "alumni",
-    "isVerified": true,
-    "createdAt": "2024-09-20T08:15:00.000Z"
-  }
-]
-```
-
-**Response (403 - Forbidden):**
-
-```json
-{
-  "message": "Insufficient role",
-  "code": "INSUFFICIENT_ROLE"
-}
-```
-
----
-
-### 2. Get User by ID
-
-**Endpoint:** `GET /api/users/:id`
-
-**Authentication:** Bearer Token
-
-**Required Role:** `admin`
-
-**Request Headers:**
-
-```
-Authorization: Bearer <admin-access-token>
-```
-
-**Response (200 - Success):**
-
-```json
-{
-  "_id": "64f7b1234567890abcdef123",
-  "name": "John Doe",
-  "email": "john@mail.ugm.ac.id",
-  "role": "mahasiswa",
-  "isVerified": true,
-  "createdAt": "2024-09-24T10:30:00.000Z",
-  "updatedAt": "2024-09-24T10:30:00.000Z"
-}
-```
-
-**Response (404 - Not Found):**
-
-```json
-{
-  "message": "User tidak ditemukan"
-}
-```
-
----
-
-### 3. Update User Role
-
-**Endpoint:** `PATCH /api/users/:id/role`
-
-**Authentication:** Bearer Token
-
-**Required Role:** `admin`
-
-**Request Headers:**
-
-```
-Authorization: Bearer <admin-access-token>
+Authorization: Bearer {admin_token}
 Content-Type: application/json
 ```
 
-**Request Body:**
+**Required Role:** `admin`
 
+**Request Body:**
 ```json
 {
-  "role": "alumni"
+  "email": "newstudent@mail.ugm.ac.id",
+  "role": "mahasiswa",
+  "name": "Jane Doe",              // Optional
+  "nim": "22/123456/TK/12345",     // Optional (mahasiswa/alumni)
+  "prodi": "Teknik Elektro"        // Optional (mahasiswa/alumni)
 }
 ```
 
-**Valid Roles:** `mahasiswa`, `alumni`, `admin`, `guest`
-
-**Response (200 - Success):**
-
+**Response Success (201):**
 ```json
 {
-  "message": "Role updated",
+  "message": "User pre-created successfully. User can now register to claim this account.",
   "user": {
-    "_id": "64f7b1234567890abcdef123",
-    "name": "John Doe",
-    "email": "john@mail.ugm.ac.id",
-    "role": "alumni",
-    "isVerified": true,
-    "updatedAt": "2024-09-24T11:00:00.000Z"
+    "id": "673...",
+    "email": "newstudent@mail.ugm.ac.id",
+    "role": "mahasiswa",
+    "name": "Jane Doe",
+    "nim": "22/123456/TK/12345",
+    "prodi": "Teknik Elektro",
+    "isClaimed": false
   }
 }
 ```
 
+**Response Error (400):**
+```json
+{
+  "message": "Email sudah digunakan"
+}
+```
+
+**Notes:**
+- User dibuat dengan `isClaimed: false`, `isVerified: false`, tanpa password
+- User bisa claim akun ini dengan register menggunakan email yang sama
+- Setelah register, user verify OTP dan set password
+
 ---
 
-### 4. Delete User
+### 2. Bulk Create Pre-Populated Users
 
-**Endpoint:** `DELETE /api/users/:id`
+**POST** `/api/users/bulk`
 
-**Authentication:** Bearer Token
+Admin bulk create users (import dari CSV/Excel).
+
+**Headers:**
+```
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+```
 
 **Required Role:** `admin`
 
-**Request Headers:**
-
-```
-Authorization: Bearer <admin-access-token>
-```
-
-**Response (200 - Success):**
-
+**Request Body:**
 ```json
 {
-  "message": "User berhasil dihapus"
+  "users": [
+    {
+      "email": "student1@mail.ugm.ac.id",
+      "role": "mahasiswa",
+      "name": "Student 1",
+      "nim": "22/111111/TK/11111",
+      "prodi": "Teknik Komputer"
+    },
+    {
+      "email": "student2@mail.ugm.ac.id",
+      "role": "mahasiswa",
+      "name": "Student 2",
+      "nim": "22/222222/TK/22222",
+      "prodi": "Teknik Elektro"
+    }
+  ]
 }
 ```
 
----
-
-## 🎓 Capstone Management Endpoints
-
-### 📋 **Capstone Management API Endpoints**
-
-| **Method** | **Endpoint** | **Description** | **Auth Required** | **Role** |
-|------------|--------------|-----------------|-------------------|----------|
-| `POST` | `/api/capstones` | Create new capstone | ✅ | alumni, admin |
-| `GET` | `/api/capstones/search` | Search capstones | ✅ | Any |
-| `GET` | `/api/capstones` | Get all capstones | ✅ | Any |
-| `GET` | `/api/capstones/:id` | Get capstone detail | ✅ | Any |
-| `PUT` | `/api/capstones/:id` | Update capstone | ✅ | alumni (owner), admin |
-| `GET` | `/api/capstones/:id/proposal` | Get proposal link | ✅ | admin |
-| `DELETE` | `/api/capstones/:id` | Delete capstone | ✅ | alumni (owner), admin |
-
----
-
-### 1. Create Capstone
-
-**Endpoint:** `POST /api/capstones`
-
-**Authentication:** Bearer Token
-
-**Required Role:** `alumni`, `admin`
-
-**Request Headers:**
-
-```
-Authorization: Bearer <alumni-access-token>
-Content-Type: multipart/form-data
-```
-
-**Request Body (FormData):**
-
-```javascript
-const formData = new FormData();
-formData.append('judul', 'Machine Learning untuk Prediksi Cuaca');
-formData.append('kategori', 'AI');
-formData.append('deskripsi', 'Sistem prediksi cuaca menggunakan neural network');
-formData.append('proposal', proposalFile); // File (PDF, DOC, DOCX)
-```
-
-**File Requirements:**
-- Max size: 10MB
-- Allowed types: PDF, DOC, DOCX
-- Stored in Google Drive
-
-**Response (201 - Success):**
-
+**Response Success (201):**
 ```json
 {
-  "_id": "64f7b1234567890abcdef111",
-  "judul": "Machine Learning untuk Prediksi Cuaca",
-  "kategori": "AI",
-  "deskripsi": "Sistem prediksi cuaca menggunakan neural network",
-  "alumni": {
-    "_id": "64f7b1234567890abcdef456",
-    "name": "Dr. Alumni",
-    "email": "alumni@mail.ugm.ac.id"
+  "message": "Bulk user creation completed",
+  "summary": {
+    "total": 2,
+    "success": 2,
+    "failed": 0
   },
-  "proposalUrl": "https://drive.google.com/file/d/...",
-  "status": "Tersedia",
-  "createdAt": "2024-09-24T10:30:00.000Z"
+  "results": {
+    "success": [
+      {
+        "email": "student1@mail.ugm.ac.id",
+        "user": { "id": "673...", "email": "student1@mail.ugm.ac.id", "role": "mahasiswa" }
+      },
+      {
+        "email": "student2@mail.ugm.ac.id",
+        "user": { "id": "674...", "email": "student2@mail.ugm.ac.id", "role": "mahasiswa" }
+      }
+    ],
+    "failed": []
+  }
 }
 ```
 
+**Notes:**
+- Batch create untuk import data mahasiswa/dosen
+- Jika ada error di salah satu user, yang lain tetap diproses
+- Return summary success/failed
+
 ---
 
-### 2. Search Capstones
+### 3. Get All Users
 
-**Endpoint:** `GET /api/capstones/search`
+**GET** `/api/users`
 
-**Authentication:** Bearer Token
+Get semua users.
 
-**Required Role:** Any authenticated user
-
-**Request Headers:**
-
+**Headers:**
 ```
-Authorization: Bearer <access-token>
+Authorization: Bearer {token}
 ```
 
-**Query Parameters:**
-- `judul` (optional): Search by title
-- `kategori` (optional): Filter by category
+**Required Role:** `admin`, `dosen`
 
-**Example Request:**
+**Query Parameters:** None
 
-```
-GET /api/capstones/search?judul=AI&kategori=Machine Learning
-```
-
-**Response (200 - Success):**
-
+**Response Success (200):**
 ```json
 [
   {
-    "_id": "64f7b1234567890abcdef111",
-    "judul": "AI-Powered Learning System",
-    "kategori": "Machine Learning",
-    "deskripsi": "Intelligent tutoring system",
-    "alumni": {
-      "name": "Dr. Alumni",
-      "email": "alumni@mail.ugm.ac.id"
-    },
-    "status": "Tersedia",
-    "createdAt": "2024-09-24T10:30:00.000Z"
+    "_id": "673...",
+    "email": "student@mail.ugm.ac.id",
+    "name": "John Doe",
+    "role": "mahasiswa",
+    "nim": "22/504042/TK/55111",
+    "prodi": "Teknik Komputer",
+    "isVerified": true,
+    "isClaimed": true,
+    "createdAt": "2025-11-12T10:00:00.000Z",
+    "updatedAt": "2025-11-12T10:00:00.000Z"
+  },
+  {
+    "_id": "674...",
+    "email": "dosen@ugm.ac.id",
+    "name": "Dr. Prof",
+    "role": "dosen",
+    "isVerified": true,
+    "isClaimed": true,
+    "createdAt": "2025-11-12T11:00:00.000Z",
+    "updatedAt": "2025-11-12T11:00:00.000Z"
   }
 ]
 ```
+
+**Notes:**
+- Password field tidak di-return
+- NIM dan Prodi hanya untuk mahasiswa/alumni
+
+---
+
+### 4. Get User by ID
+
+**GET** `/api/users/:id`
+
+Get user detail by ID.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Required Role:** `admin`, `dosen`
+
+**URL Parameters:**
+- `id` - User ID
+
+**Response Success (200):**
+```json
+{
+  "_id": "673...",
+  "email": "student@mail.ugm.ac.id",
+  "name": "John Doe",
+  "role": "mahasiswa",
+  "nim": "22/504042/TK/55111",
+  "prodi": "Teknik Komputer",
+  "isVerified": true,
+  "isClaimed": true,
+  "createdAt": "2025-11-12T10:00:00.000Z",
+  "updatedAt": "2025-11-12T10:00:00.000Z"
+}
+```
+
+**Response Error (404):**
+```json
+{
+  "message": "User not found"
+}
+```
+
+---
+
+### 5. Update User
+
+**PATCH** `/api/users/:id`
+
+Update user (role, name, email, nim, prodi, isVerified, isClaimed).
+
+**Headers:**
+```
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+```
+
+**Required Role:** `admin`
+
+**URL Parameters:**
+- `id` - User ID
+
+**Request Body (semua field optional):**
+```json
+{
+  "name": "Updated Name",
+  "email": "newemail@mail.ugm.ac.id",
+  "role": "alumni",
+  "nim": "22/999999/TK/99999",
+  "prodi": "Teknik Komputer",
+  "isVerified": true,
+  "isClaimed": true
+}
+```
+
+**Response Success (200):**
+```json
+{
+  "message": "User updated successfully",
+  "user": {
+    "id": "673...",
+    "email": "newemail@mail.ugm.ac.id",
+    "name": "Updated Name",
+    "role": "alumni",
+    "nim": "22/999999/TK/99999",
+    "prodi": "Teknik Komputer",
+    "isVerified": true,
+    "isClaimed": true
+  }
+}
+```
+
+**Response Error (400):**
+```json
+{
+  "message": "NIM sudah digunakan"
+}
+// or
+{
+  "message": "Email sudah digunakan"
+}
+```
+
+**Notes:**
+- Hanya admin yang bisa update user
+- NIM harus unique (jika diubah)
+- Email harus unique (jika diubah)
+
+---
+
+### 6. Delete User
+
+**DELETE** `/api/users/:id`
+
+Delete user.
+
+**Headers:**
+```
+Authorization: Bearer {admin_token}
+```
+
+**Required Role:** `admin`
+
+**URL Parameters:**
+- `id` - User ID
+
+**Response Success (200):**
+```json
+{
+  "message": "User deleted",
+  "user": {
+    "_id": "673...",
+    "email": "student@mail.ugm.ac.id",
+    "name": "John Doe",
+    "role": "mahasiswa"
+  }
+}
+```
+
+**Response Error (404):**
+```json
+{
+  "message": "User not found"
+}
+```
+
+---
+
+## 📚 Capstones
+
+Base Path: `/api/capstones`
+
+### 1. Create Capstone
+
+**POST** `/api/capstones`
+
+Create capstone baru (dengan upload gambar hasil opsional).
+
+**Headers:**
+```
+Authorization: Bearer {admin_token}
+Content-Type: multipart/form-data
+```
+
+**Required Role:** `admin`
+
+**Request Body (multipart/form-data):**
+
+```
+judul: "Sistem Pengelolaan Sampah Terpadu"
+kategori: "Pengolahan Sampah"              // Wajib: "Pengolahan Sampah", "Smart City", atau "Transportasi Ramah Lingkungan"
+ketua: "673abc..."                           // User ID (alumni)
+anggota: ["673def...", "673ghi..."]          // Array of User IDs (alumni)
+dosen: "673xyz..."                           // User ID (dosen/admin)
+abstrak: "Deskripsi lengkap capstone..."
+proposal: file.pdf                           // Upload PDF proposal ke Cloudinary (max 10MB)
+gambar: [file1, file2]                       // Optional, max 2 images (jpeg/jpg/png/gif/webp, max 5MB each)
+```
+
+**cURL Example:**
+```bash
+curl -X POST http://localhost:5000/api/capstones \
+  -H "Authorization: Bearer {token}" \
+  -F "judul=Sistem Pengelolaan Sampah Terpadu" \
+  -F "kategori=Pengolahan Sampah" \
+  -F "ketua=673abc..." \
+  -F "dosen=673xyz..." \
+  -F "abstrak=Deskripsi lengkap capstone..." \
+  -F "proposal=@/path/to/proposal.pdf" \
+  -F "gambar=@/path/to/image1.jpg" \
+  -F "gambar=@/path/to/image2.png"
+```
+
+**JavaScript Example:**
+```javascript
+const formData = new FormData();
+formData.append('judul', 'Sistem Transportasi Cerdas');
+formData.append('kategori', 'Transportasi Ramah Lingkungan');
+formData.append('ketua', ketuaId);
+formData.append('dosen', dosenId);
+formData.append('abstrak', 'Deskripsi lengkap...');
+formData.append('proposal', pdfFile);    // PDF file upload
+formData.append('gambar', imageFile1);   // Optional
+formData.append('gambar', imageFile2);   // Optional
+
+fetch('/api/capstones', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`
+  },
+  body: formData
+});
+```
+
+**Response Success (201):**
+```json
+{
+  "_id": "675...",
+  "judul": "Sistem Pengelolaan Sampah Terpadu",
+  "kategori": "Pengolahan Sampah",
+  "ketua": {
+    "_id": "673abc...",
+    "name": "Alumni Lead",
+    "email": "alumni@mail.ugm.ac.id"
+  },
+  "anggota": [
+    {
+      "_id": "673def...",
+      "name": "Alumni Member 1",
+      "email": "alumni1@mail.ugm.ac.id"
+    }
+  ],
+  "dosen": {
+    "_id": "673xyz...",
+    "name": "Dr. Dosen",
+    "email": "dosen@ugm.ac.id"
+  },
+  "abstrak": "Deskripsi lengkap capstone...",
+  "proposal": "https://res.cloudinary.com/.../proposal.pdf",
+  "hasil": [
+    "https://res.cloudinary.com/.../image1.jpg",
+    "https://res.cloudinary.com/.../image2.png"
+  ],
+  "status": "Tersedia",
+  "createdAt": "2025-11-12T10:00:00.000Z",
+  "updatedAt": "2025-11-12T10:00:00.000Z"
+}
+```
+
+**Response Error (400):**
+```json
+{
+  "message": "Ketua must have role 'alumni'"
+}
+// or
+{
+  "message": "Dosen must have role 'dosen' or 'admin'"
+}
+// or
+{
+  "message": "Kategori harus: Pengolahan Sampah, Smart City, atau Transportasi Ramah Lingkungan"
+}
+// or
+{
+  "message": "Maksimal 2 gambar hasil"
+}
+// or
+{
+  "message": "Gagal upload gambar: File too large"
+}
+```
+
+**Notes:**
+- **Upload proposal PDF** ke Cloudinary (max 10MB, format: PDF)
+- **Upload gambar hasil opsional** - bisa create capstone tanpa gambar
+- **Kategori wajib** salah satu dari: "Pengolahan Sampah", "Smart City", "Transportasi Ramah Lingkungan"
+- **Max 2 gambar** dengan format: jpeg, jpg, png, gif, webp
+- **Max file size:** 5MB per gambar, 10MB untuk PDF
+- **Proposal dan gambar di-upload ke Cloudinary** dan URL disimpan di database
+- **Auto-optimization gambar:** Resize max 1200x1200, auto quality, WebP conversion
+- Ketua & anggota harus role `alumni`
+- Dosen harus role `dosen` atau `admin`
+- Ketua TIDAK boleh ada di array anggota
+
+---
+
+### 2. Get Capstone Statistics
+
+**GET** `/api/capstones/stats`
+
+Get statistik capstone untuk admin dashboard.
+
+**Headers:**
+```
+Authorization: Bearer {admin_token}
+```
+
+**Required Role:** `admin`
+
+**Response Success (200):**
+```json
+{
+  "totalCapstones": 50,
+  "tersedia": 35,
+  "tidakTersedia": 15,
+  "fullyRequested": 8,
+  "noRequests": 20,
+  "partiallyRequested": 22
+}
+```
+
+**Notes:**
+- `fullyRequested`: Capstone dengan >= 3 pending request
+- `noRequests`: Capstone tanpa request sama sekali
+- `partiallyRequested`: Capstone dengan 1-2 pending request
+- Hanya admin yang bisa akses endpoint ini
 
 ---
 
 ### 3. Get All Capstones
 
-**Endpoint:** `GET /api/capstones`
+**GET** `/api/capstones`
 
-**Authentication:** Bearer Token
+Get semua capstones (public access).
 
-**Required Role:** Any authenticated user
-
-**Request Headers:**
-
+**Headers:**
 ```
-Authorization: Bearer <access-token>
+Authorization: Bearer {token}  // Optional
 ```
 
-**Response (200 - Success):**
+**Required Role:** None (public), optional auth for proposalUrl access
 
+**Response Success (200):**
 ```json
 [
   {
-    "_id": "64f7b1234567890abcdef111",
-    "judul": "Machine Learning untuk Prediksi Cuaca",
-    "kategori": "AI",
-    "deskripsi": "Sistem prediksi cuaca menggunakan neural network",
-    "alumni": {
-      "_id": "64f7b1234567890abcdef456",
-      "name": "Dr. Alumni",
-      "email": "alumni@mail.ugm.ac.id"
+    "_id": "675...",
+    "judul": "Sistem Pengelolaan Sampah Terpadu",
+    "kategori": "Pengolahan Sampah",
+    "ketua": {
+      "_id": "673abc...",
+      "name": "Alumni Lead",
+      "email": "alumni@mail.ugm.ac.id",
+      "role": "alumni"
     },
+    "anggota": [
+      {
+        "_id": "673def...",
+        "name": "Alumni Member 1",
+        "email": "alumni1@mail.ugm.ac.id",
+        "role": "alumni"
+      }
+    ],
+    "dosen": {...},
+    "hasil": [],
     "status": "Tersedia",
-    "createdAt": "2024-09-24T10:30:00.000Z"
+    "createdAt": "2025-11-12T10:00:00.000Z"
   }
 ]
 ```
 
-**Status Values:** `Tersedia`, `Dipilih`, `Selesai`
+**Notes:**
+- `proposal` TIDAK ditampilkan di list (hanya di detail dengan access control)
+- Ketua, anggota, dan dosen di-populate dengan data user
+- Status: "Tersedia" atau "Tidak Tersedia"
+  - "Tersedia": Capstone bisa dipilih
+  - "Tidak Tersedia": Capstone sudah dipilih oleh group (approved) atau sudah ada >= 3 pending request
+- Kategori: "Pengolahan Sampah", "Smart City", atau "Transportasi Ramah Lingkungan"
+- `hasil` array kosong [] jika tidak ada gambar
+- **Public Access**: Bisa diakses tanpa login, tapi `proposalUrl` hanya muncul untuk user dengan akses
+
+---
+
+### 4. Search Capstones
+
+**GET** `/api/capstones/search`
+
+Search dan filter capstones.
+
+**Headers:**
+```
+Authorization: Bearer {token}  // Optional
+```
+
+**Required Role:** None (public), optional auth for proposalUrl access
+
+**Query Parameters:**
+- `judul` (optional) - Filter by judul (case-insensitive, partial match)
+- `kategori` (optional) - Filter by kategori (exact match: "Pengolahan Sampah", "Smart City", atau "Transportasi Ramah Lingkungan")
+- `status` (optional) - Filter by status (exact match: "Tersedia" atau "Tidak Tersedia")
+- `sortBy` (optional) - Sort by: `terbaru` (newest first) or `judul` (A-Z)
+
+**Example Request:**
+```
+GET /api/capstones/search?judul=sampah&kategori=Pengolahan Sampah&status=Tersedia&sortBy=terbaru
+```
+
+**Response Success (200):**
+```json
+[
+  {
+    "_id": "675...",
+    "judul": "Sistem Pengelolaan Sampah Terpadu",
+    "kategori": "Pengolahan Sampah",
+    "ketua": {
+      "_id": "673abc...",
+      "name": "Alumni Lead",
+      "email": "alumni@mail.ugm.ac.id",
+      "role": "alumni"
+    },
+    "anggota": [...],
+    "dosen": {...},
+    "status": "Tersedia",
+    "createdAt": "2025-11-12T10:00:00.000Z"
+  }
+]
+```
+
+**Notes:**
+- Kategori harus exact match: "Pengolahan Sampah", "Smart City", atau "Transportasi Ramah Lingkungan"
+- Status: "Tersedia" atau "Tidak Tersedia"
+- Semua query parameters optional
+- Default sorting: terbaru (newest first)
+- linkProposal tidak ditampilkan di search results
 
 ---
 
 ### 4. Get Capstone Detail
 
-**Endpoint:** `GET /api/capstones/:id`
+**GET** `/api/capstones/:id`
 
-**Authentication:** Bearer Token
+Get detail capstone (dengan access control untuk linkProposal).
 
-**Required Role:** Any authenticated user
-
-**Request Headers:**
-
+**Headers:**
 ```
-Authorization: Bearer <access-token>
+Authorization: Bearer {token}
 ```
 
-**Response (200 - Success):**
+**Required Role:** All authenticated users
 
+**URL Parameters:**
+- `id` - Capstone ID
+
+**Response Success (200):**
+
+**For Admin or Approved Group Members:**
 ```json
 {
-  "_id": "64f7b1234567890abcdef111",
-  "judul": "Machine Learning untuk Prediksi Cuaca",
-  "kategori": "AI", 
-  "deskripsi": "Sistem prediksi cuaca menggunakan neural network dengan teknologi deep learning dan data historis cuaca.",
-  "alumni": {
-    "_id": "64f7b1234567890abcdef456",
-    "name": "Dr. Alumni",
-    "email": "alumni@mail.ugm.ac.id"
+  "_id": "675...",
+  "judul": "Sistem Pengelolaan Sampah Terpadu",
+  "kategori": "Pengolahan Sampah",
+  "ketua": {
+    "_id": "673abc...",
+    "name": "Alumni Lead",
+    "email": "alumni@mail.ugm.ac.id",
+    "role": "alumni"
   },
-  "proposalUrl": "https://drive.google.com/file/d/...",
+  "anggota": [...],
+  "dosen": {...},
+  "abstrak": "Deskripsi lengkap capstone...",
+  "proposal": "https://res.cloudinary.com/.../proposal.pdf",  // ← Visible for admin/approved groups
+  "hasil": [
+    "https://res.cloudinary.com/.../image1.jpg"
+  ],
   "status": "Tersedia",
-  "createdAt": "2024-09-24T10:30:00.000Z",
-  "updatedAt": "2024-09-24T10:30:00.000Z"
+  "createdAt": "2025-11-12T10:00:00.000Z",
+  "updatedAt": "2025-11-12T10:00:00.000Z"
 }
 ```
+
+**For Others (non-admin, not in approved group):**
+```json
+{
+  "_id": "675...",
+  "judul": "Sistem Pengelolaan Sampah Terpadu",
+  "kategori": "Pengolahan Sampah",
+  "ketua": {...},
+  "anggota": [...],
+  "dosen": {...},
+  "abstrak": "Deskripsi lengkap capstone...",
+  // proposal NOT included
+  "hasil": [],
+  "status": "Tersedia",
+  "createdAt": "2025-11-12T10:00:00.000Z",
+  "updatedAt": "2025-11-12T10:00:00.000Z"
+}
+```
+
+**Response Error (404):**
+```json
+{
+  "message": "Capstone not found"
+}
+```
+
+**Notes:**
+- **`proposal` hanya visible untuk:**
+  - Admin
+  - Members dari group yang sudah approved untuk capstone ini
+- Access control dilakukan di service layer
+- `hasil` array kosong [] jika tidak ada gambar
 
 ---
 
 ### 5. Update Capstone
 
-**Endpoint:** `PUT /api/capstones/:id`
+**PUT** `/api/capstones/:id`
 
-**Authentication:** Bearer Token
+Update capstone (termasuk update gambar hasil).
 
-**Required Role:** `alumni` (owner only), `admin`
-
-**Request Headers:**
+**Headers:**
 
 ```
-Authorization: Bearer <alumni-access-token>
+Authorization: Bearer {admin_token}
 Content-Type: multipart/form-data
 ```
 
-**Request Body (FormData):**
+**Required Role:** `admin`
+
+**URL Parameters:**
+
+- `id` - Capstone ID
+
+**Request Body (multipart/form-data, semua field optional):**
+
+```
+judul: "Updated Judul"
+kategori: "Smart City"                       // Harus salah satu dari 3 kategori
+ketua: "673new..."
+anggota: ["673x...", "673y..."]
+dosen: "673z..."
+abstrak: "Updated abstrak"
+status: "Tidak Tersedia"                     // "Tersedia" atau "Tidak Tersedia"
+proposal: newProposal.pdf                    // Upload PDF baru (auto replace yang lama)
+gambar: [newFile1, newFile2]                 // Upload gambar baru (auto replace yang lama, max 2)
+```
+
+**JavaScript Example:**
 
 ```javascript
 const formData = new FormData();
-formData.append('judul', 'Updated Title');
-formData.append('kategori', 'Updated Category');
-formData.append('deskripsi', 'Updated description');
-formData.append('proposal', newProposalFile); // Optional
-```
+formData.append('judul', 'Updated Judul');
+formData.append('proposal', newPdfFile);  // Replace proposal lama
+formData.append('gambar', newImage1);     // Replace gambar lama
+formData.append('gambar', newImage2);
 
-**Response (200 - Success):**
-
-```json
-{
-  "_id": "64f7b1234567890abcdef111",
-  "judul": "Updated Title",
-  "kategori": "Updated Category",
-  "deskripsi": "Updated description",
-  "alumni": {
-    "_id": "64f7b1234567890abcdef456",
-    "name": "Dr. Alumni",
-    "email": "alumni@mail.ugm.ac.id"
+fetch(`/api/capstones/${capstoneId}`, {
+  method: 'PUT',
+  headers: {
+    'Authorization': `Bearer ${token}`
   },
-  "proposalUrl": "https://drive.google.com/file/d/...",
-  "status": "Tersedia",
-  "updatedAt": "2024-09-24T11:00:00.000Z"
-}
+  body: formData
+});
 ```
 
----
-
-### 6. Get Proposal Link
-
-**Endpoint:** `GET /api/capstones/:id/proposal`
-
-**Authentication:** Bearer Token
-
-**Required Role:** `admin`
-
-**Request Headers:**
-
-```
-Authorization: Bearer <admin-access-token>
-```
-
-**Response (200 - Success):**
+**Response Success (200):**
 
 ```json
 {
-  "proposalUrl": "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
-  "fileName": "ML_Weather_Prediction_Proposal.pdf",
-  "uploadedAt": "2024-09-24T10:30:00.000Z"
-}
-```
-
----
-
-### 7. Delete Capstone
-
-**Endpoint:** `DELETE /api/capstones/:id`
-
-**Authentication:** Bearer Token
-
-**Required Role:** `alumni` (owner only), `admin`
-
-**Request Headers:**
-
-```
-Authorization: Bearer <alumni-access-token>
-```
-
-**Response (200 - Success):**
-
-```json
-{
-  "message": "Capstone berhasil dihapus"
-}
-```
-
-**Business Rules:**
-- Cannot delete if status is "Dipilih" (already selected by group)
-- Alumni can only delete their own capstones
-- Admin can delete any capstone
-
----
-
-## 👥 Group Management Endpoints
-
-### 📋 **Group Management API Endpoints**
-
-| **Method** | **Endpoint** | **Description** | **Auth Required** | **Role** |
-|------------|--------------|-----------------|-------------------|----------|
-| `POST` | `/api/groups` | Create new group | ✅ | admin |
-| `DELETE` | `/api/groups/:id` | Delete group | ✅ | admin |
-| `POST` | `/api/groups/:id/pilih` | Choose capstone | ✅ | mahasiswa (leader) |
-| `GET` | `/api/groups/:id` | Get group detail | ✅ | Group member, admin |
-
----
-
-### 1. Create Group
-
-**Endpoint:** `POST /api/groups`
-
-**Authentication:** Bearer Token
-
-**Required Role:** `admin`
-
-**Request Headers:**
-
-```
-Authorization: Bearer <admin-access-token>
-Content-Type: application/json
-```
-
-**Request Body:**
-
-```json
-{
-  "namaKelompok": "Kelompok Sistem Informasi A",
-  "ketua": "64f7b1234567890abcdef123",
-  "anggota": [
-    "64f7b1234567890abcdef123",
-    "64f7b1234567890abcdef124", 
-    "64f7b1234567890abcdef125"
-  ]
-}
-```
-
-**Response (201 - Success):**
-
-```json
-{
-  "_id": "64f7b1234567890abcdef999",
-  "namaKelompok": "Kelompok Sistem Informasi A",
-  "ketua": {
-    "_id": "64f7b1234567890abcdef123",
-    "name": "John Doe",
-    "email": "john@mail.ugm.ac.id"
-  },
-  "anggota": [
-    {
-      "_id": "64f7b1234567890abcdef123",
-      "name": "John Doe",
-      "email": "john@mail.ugm.ac.id"
-    },
-    {
-      "_id": "64f7b1234567890abcdef124",
-      "name": "Jane Smith",
-      "email": "jane@mail.ugm.ac.id"
-    }
+  "_id": "675...",
+  "judul": "Updated Judul",
+  "kategori": "Smart City",
+  "ketua": {...},
+  "anggota": [...],
+  "dosen": {...},
+  "abstrak": "Updated abstrak",
+  "proposal": "https://res.cloudinary.com/.../new-proposal.pdf",
+  "hasil": [
+    "https://res.cloudinary.com/.../new-image1.jpg",
+    "https://res.cloudinary.com/.../new-image2.png"
   ],
-  "status": "Belum Pilih Capstone",
-  "createdAt": "2024-09-24T10:30:00.000Z"
+  "status": "Tidak Tersedia",
+  "updatedAt": "2025-11-12T15:00:00.000Z"
 }
 ```
 
-**Business Rules:**
-- Ketua must be included in anggota array (automatically handled)
-- All members must have role "mahasiswa" 
-- Maximum 4 members per group
-- Ketua and anggota use ObjectId format
-- No duplicate members (automatically deduplicated)
+**Response Error (404):**
+
+```json
+{
+  "message": "Capstone not found"
+}
+```
+
+**Response Error (403):**
+
+```json
+{
+  "message": "Not authorized to update this capstone"
+}
+```
+
+**Notes:**
+
+- Hanya admin yang bisa update
+- **Upload proposal PDF baru otomatis delete proposal lama dari Cloudinary**
+- **Upload gambar baru otomatis delete gambar lama dari Cloudinary**
+- Ketua tidak boleh ada di array anggota
+- Semua field optional - kirim hanya yang ingin diupdate
 
 ---
 
-### 2. Delete Group
+### 6. Delete Capstone
 
-**Endpoint:** `DELETE /api/groups/:id`
+**DELETE** `/api/capstones/:id`
 
-**Authentication:** Bearer Token
+Delete capstone (auto delete gambar dari Cloudinary).
+
+**Headers:**
+
+```
+Authorization: Bearer {admin_token}
+```
 
 **Required Role:** `admin`
 
-**Request Headers:**
+**URL Parameters:**
 
-```
-Authorization: Bearer <admin-access-token>
-```
+- `id` - Capstone ID
 
-**Response (200 - Success):**
+**Response Success (200):**
 
 ```json
 {
-  "message": "Group berhasil dihapus"
-}
-```
-
-**Business Rules:**
-- Cannot delete group if capstone selection is already approved
-- Cannot delete group with status "Disetujui"
-
----
-
-### 3. Choose Capstone
-
-**Endpoint:** `POST /api/groups/:id/pilih`
-
-**Authentication:** Bearer Token
-
-**Required Role:** `mahasiswa` (must be group leader)
-
-**Request Headers:**
-
-```
-Authorization: Bearer <ketua-access-token>
-Content-Type: application/json
-```
-
-**Request Body:**
-
-```json
-{
-  "capstoneId": "64f7b1234567890abcdef111"
-}
-```
-
-**Response (200 - Success):**
-
-```json
-{
-  "message": "Capstone berhasil dipilih",
-  "group": {
-    "_id": "64f7b1234567890abcdef999",
-    "namaKelompok": "Kelompok Sistem Informasi A",
-    "ketua": {
-      "_id": "64f7b1234567890abcdef123",
-      "name": "John Doe",
-      "email": "john@mail.ugm.ac.id"
-    },
-    "anggota": [...],
-    "capstoneDipilih": {
-      "_id": "64f7b1234567890abcdef111",
-      "judul": "Machine Learning untuk Prediksi Cuaca",
-      "kategori": "AI",
-      "alumni": {
-        "name": "Dr. Alumni",
-        "email": "alumni@mail.ugm.ac.id"
-      }
-    },
-    "status": "Menunggu Review",
-    "updatedAt": "2024-09-24T11:00:00.000Z"
+  "message": "Capstone deleted successfully",
+  "capstone": {
+    "_id": "675...",
+    "judul": "Sistem Informasi Rumah Sakit",
+    ...
   }
 }
 ```
 
-**Side Effects:**
-- Group status changes to "Menunggu Review"
-- Notification sent to capstone owner (alumni)
-- Capstone becomes unavailable for other groups
-
----
-
-### 4. Get Group Detail
-
-**Endpoint:** `GET /api/groups/:id`
-
-**Authentication:** Bearer Token
-
-**Required Role:** Group member or Admin
-
-**Request Headers:**
-
-```
-Authorization: Bearer <member-access-token>
-```
-
-**Response (200 - Success):**
+**Response Error (404):**
 
 ```json
 {
-  "_id": "64f7b1234567890abcdef999",
-  "namaKelompok": "Kelompok Sistem Informasi A",
-  "ketua": {
-    "_id": "64f7b1234567890abcdef123",
-    "name": "John Doe",
-    "email": "john@mail.ugm.ac.id"
-  },
-  "anggota": [
-    {
-      "_id": "64f7b1234567890abcdef123",
-      "name": "John Doe",
-      "email": "john@mail.ugm.ac.id"
-    }
-  ],
-  "capstoneDipilih": {
-    "_id": "64f7b1234567890abcdef111",
-    "judul": "Machine Learning untuk Prediksi Cuaca",
-    "kategori": "AI",
-    "alumni": {
-      "name": "Dr. Alumni",
-      "email": "alumni@mail.ugm.ac.id"
-    }
-  },
-  "status": "Disetujui",
-  "createdAt": "2024-09-24T10:30:00.000Z",
-  "updatedAt": "2024-09-24T12:00:00.000Z"
+  "message": "Capstone not found"
 }
 ```
 
-**Access Control:**
-- Only group members can view their group details
-- Admin can view any group details
-- Returns 403 if user is not group member or admin
+**Response Error (403):**
+
+```json
+{
+  "message": "Not authorized to delete this capstone"
+}
+```
+
+**Notes:**
+
+- **Auto delete proposal PDF dan gambar hasil dari Cloudinary** sebelum delete capstone dari database
+- Hanya admin yang bisa delete
 
 ---
 
-## ⭐ Review Management Endpoints
+## 👨‍👩‍👦 Groups
 
-### 📋 **Review Management API Endpoints**
+Base Path: `/api/groups`
 
-| **Method** | **Endpoint** | **Description** | **Auth Required** | **Role** |
-|------------|--------------|-----------------|-------------------|----------|
-| `GET` | `/api/reviews/pending` | Get pending reviews | ✅ | alumni |
-| `POST` | `/api/reviews/:id` | Review group selection | ✅ | alumni (capstone owner) |
+### 1. Create Group
+
+**POST** `/api/groups`
+
+Create group mahasiswa.
+
+**Headers:**
+```
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+```
+
+**Required Role:** `admin`
+
+**Request Body:**
+```json
+{
+  "tema": "Healthcare Technology",
+  "namaTim": "Team Alpha",
+  "tahun": 2025,
+  "ketua": "673abc...",                    // User ID (mahasiswa)
+  "anggota": ["673def...", "673ghi..."],   // Array of User IDs (mahasiswa), max 3
+  "dosen": "673jkl...",                     // User ID (dosen)
+  "linkCVGabungan": "https://drive.google.com/cv"
+}
+```
+
+**Response Success (201):**
+```json
+{
+  "_id": "676...",
+  "tema": "Healthcare Technology",
+  "namaTim": "Team Alpha",
+  "tahun": 2025,
+  "ketua": {
+    "_id": "673abc...",
+    "name": "Student Lead",
+    "email": "student@mail.ugm.ac.id",
+    "role": "mahasiswa"
+  },
+  "anggota": [
+    {
+      "_id": "673def...",
+      "name": "Student Member 1",
+      "email": "student1@mail.ugm.ac.id",
+      "role": "mahasiswa"
+    }
+  ],
+  "dosen": {
+    "_id": "673jkl...",
+    "name": "Dr. Prof",
+    "email": "dosen@ugm.ac.id",
+    "role": "dosen"
+  },
+  "linkCVGabungan": "https://drive.google.com/cv",
+  "createdAt": "2025-11-12T10:00:00.000Z"
+}
+```
+
+**Response Error (400):**
+```json
+{
+  "message": "Ketua tidak boleh ada di array anggota"
+}
+// or
+{
+  "message": "Maksimal anggota adalah 3 orang (tidak termasuk ketua)"
+}
+// or
+{
+  "message": "User dengan ID ... tidak ditemukan"
+}
+```
+
+**Notes:**
+- Ketua TIDAK boleh ada di array anggota (separated)
+- Max members: 1 ketua + 3 anggota = 4 total
+- Ketua dan anggota harus role `mahasiswa`
+- Dosen harus role `dosen`
 
 ---
+
+### 2. Get Group Detail
+
+**GET** `/api/groups/:id`
+
+Get detail group.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Required Role:** All authenticated users (with access control)
+
+**URL Parameters:**
+- `id` - Group ID
+
+**Response Success (200):**
+```json
+{
+  "_id": "676...",
+  "tema": "Healthcare Technology",
+  "namaTim": "Team Alpha",
+  "tahun": 2025,
+  "ketua": {
+    "_id": "673abc...",
+    "name": "Student Lead",
+    "email": "student@mail.ugm.ac.id",
+    "role": "mahasiswa",
+    "nim": "22/504042/TK/55111",
+    "prodi": "Teknik Komputer"
+  },
+  "anggota": [
+    {
+      "_id": "673def...",
+      "name": "Student Member 1",
+      "email": "student1@mail.ugm.ac.id",
+      "role": "mahasiswa",
+      "nim": "22/123456/TK/12345",
+      "prodi": "Teknik Elektro"
+    }
+  ],
+  "dosen": {
+    "_id": "673jkl...",
+    "name": "Dr. Prof",
+    "email": "dosen@ugm.ac.id",
+    "role": "dosen"
+  },
+  "linkCVGabungan": "https://drive.google.com/cv",
+  "capstone": {
+    "_id": "675...",
+    "judul": "Sistem Pengelolaan Sampah Terpadu",
+    "kategori": "Pengolahan Sampah"
+  },
+  "status": "approved",
+  "createdAt": "2025-11-12T10:00:00.000Z"
+}
+```
+
+**Response Error (403):**
+```json
+{
+  "message": "Anda tidak memiliki akses ke grup ini"
+}
+```
+
+**Response Error (404):**
+```json
+{
+  "message": "Group not found"
+}
+```
+
+**Notes:**
+- Hanya bisa diakses oleh: anggota group, admin, atau dosen
+- Capstone di-populate jika group sudah pilih capstone
+
+---
+
+### 3. Update Group
+
+**PUT** `/api/groups/:id`
+
+Update group.
+
+**Headers:**
+```
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+```
+
+**Required Role:** `admin`
+
+**URL Parameters:**
+- `id` - Group ID
+
+**Request Body (semua field optional):**
+```json
+{
+  "tema": "Updated Theme",
+  "namaTim": "New Team Name",
+  "ketua": "673new...",
+  "anggota": ["673x...", "673y..."],
+  "dosen": "673z...",
+  "linkCVGabungan": "https://drive.google.com/new-cv"
+}
+```
+
+**Response Success (200):**
+```json
+{
+  "message": "Group updated successfully",
+  "group": {
+    "_id": "676...",
+    "tema": "Updated Theme",
+    "namaTim": "New Team Name",
+    ...
+  }
+}
+```
+
+**Response Error (400):**
+```json
+{
+  "message": "Ketua tidak boleh ada di array anggota"
+}
+```
+
+---
+
+### 4. Delete Group
+
+**DELETE** `/api/groups/:id`
+
+Delete group.
+
+**Headers:**
+```
+Authorization: Bearer {admin_token}
+```
+
+**Required Role:** `admin`
+
+**URL Parameters:**
+- `id` - Group ID
+
+**Response Success (200):**
+```json
+{
+  "message": "Group deleted",
+  "group": {
+    "_id": "676...",
+    "tema": "Healthcare Technology",
+    "namaTim": "Team Alpha"
+  }
+}
+```
+
+---
+
+### 5. Choose Capstone
+
+**POST** `/api/groups/:id/pilih`
+
+Ketua group memilih capstone untuk tim.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**Required Role:** `mahasiswa` (harus ketua group)
+
+**URL Parameters:**
+- `id` - Group ID
+
+**Request Body:**
+```json
+{
+  "capstoneId": "675...",
+  "alasan": "Tim kami tertarik dengan project ini karena..."
+}
+```
+
+**Response Success (200):**
+```json
+{
+  "message": "Capstone chosen",
+  "relation": {
+    "_id": "677...",
+    "group": "676...",
+    "capstone": "675...",
+    "alasan": "Tim kami tertarik dengan project ini karena...",
+    "status": "pending",
+    "createdAt": "2025-11-12T10:00:00.000Z"
+  }
+}
+```
+
+**Response Error (400):**
+```json
+{
+  "message": "Group sudah memilih capstone"
+}
+// or
+{
+  "message": "Capstone not found"
+}
+```
+
+**Response Error (403):**
+```json
+{
+  "message": "Hanya ketua yang bisa memilih capstone"
+}
+```
+
+**Notes:**
+- Hanya ketua group yang bisa pilih capstone
+- Status awal: `pending` (menunggu review alumni)
+- Create Request document di database
+
+---
+
+## 📝 Reviews
+
+Base Path: `/api/reviews`
 
 ### 1. Get Pending Reviews
 
-**Endpoint:** `GET /api/reviews/pending`
+**GET** `/api/reviews/pending`
 
-**Authentication:** Bearer Token
+Alumni get pending reviews untuk capstone mereka.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
 
 **Required Role:** `alumni`
 
-**Request Headers:**
-
-```
-Authorization: Bearer <alumni-access-token>
-```
-
-**Response (200 - Success):**
-
+**Response Success (200):**
 ```json
 {
   "message": "Pending group reviews for your capstones",
   "pendingGroups": [
     {
-      "_id": "64f7b1234567890abcdef999",
-      "namaKelompok": "Kelompok Sistem Informasi A",
+      "_id": "676...",
+      "tema": "Healthcare Technology",
+      "namaTim": "Team Alpha",
       "ketua": {
-        "_id": "64f7b1234567890abcdef123",
-        "name": "John Doe",
-        "email": "john@mail.ugm.ac.id"
+        "_id": "673abc...",
+        "name": "Student Lead",
+        "email": "student@mail.ugm.ac.id"
       },
-      "anggota": [
-        {
-          "_id": "64f7b1234567890abcdef123",
-          "name": "John Doe",
-          "email": "john@mail.ugm.ac.id"
-        }
-      ],
-      "capstoneDipilih": {
-        "_id": "64f7b1234567890abcdef111",
-        "judul": "Machine Learning untuk Prediksi Cuaca",
-        "kategori": "AI"
+      "anggota": [...],
+      "capstone": {
+        "_id": "675...",
+        "judul": "Sistem Informasi Rumah Sakit"
       },
-      "status": "Menunggu Review",
-      "createdAt": "2024-09-24T10:30:00.000Z"
+      "status": "pending",
+      "createdAt": "2025-11-12T10:00:00.000Z"
     }
   ],
   "count": 1
 }
 ```
 
-**Business Rules:**
-- Only shows groups that selected alumni's own capstones
-- Only groups with status "Menunggu Review"
-- Includes complete group member information
+**Notes:**
+- Hanya menampilkan group yang pilih capstone milik alumni ini
+- Status `pending` (belum di-review)
 
 ---
 
 ### 2. Review Group
 
-**Endpoint:** `POST /api/reviews/:id`
+**POST** `/api/reviews/:id`
 
-**Authentication:** Bearer Token
+Alumni approve/reject group proposal.
 
-**Required Role:** `alumni` (capstone owner only)
-
-**Request Headers:**
-
+**Headers:**
 ```
-Authorization: Bearer <alumni-access-token>
+Authorization: Bearer {token}
 Content-Type: application/json
 ```
 
-**Request Body:**
+**Required Role:** `alumni`
 
+**URL Parameters:**
+- `id` - Group ID
+
+**Request Body:**
 ```json
 {
-  "status": "Disetujui"
+  "status": "approved"
+  // or "rejected"
 }
 ```
 
-**Valid Status Values:**
-- `"Disetujui"` - Approve group selection
-- `"Ditolak"` - Reject group selection
-
-**Response (200 - Success - Approved):**
-
+**Response Success (200):**
 ```json
 {
-  "message": "Group berhasil disetujui",
+  "message": "Group approved",
   "group": {
-    "_id": "64f7b1234567890abcdef999",
-    "namaKelompok": "Kelompok Sistem Informasi A",
-    "ketua": {
-      "_id": "64f7b1234567890abcdef123",
-      "name": "John Doe",
-      "email": "john@mail.ugm.ac.id"
-    },
-    "anggota": [...],
-    "capstoneDipilih": {
-      "_id": "64f7b1234567890abcdef111",
-      "judul": "Machine Learning untuk Prediksi Cuaca",
-      "kategori": "AI"
-    },
-    "status": "Disetujui",
-    "reviewedAt": "2024-09-24T12:00:00.000Z"
+    "_id": "676...",
+    "tema": "Healthcare Technology",
+    "namaTim": "Team Alpha",
+    "status": "approved",
+    ...
   }
 }
 ```
 
-**Side Effects:**
-- If approved: Group status → "Disetujui", Capstone status → "Dipilih"
-- If rejected: Group status → "Ditolak", Capstone becomes available again
-- Notification sent to group leader
-- Other pending groups for same capstone automatically rejected
+**Response Error (400):**
+```json
+{
+  "message": "Group belum memilih capstone"
+}
+// or
+{
+  "message": "Anda bukan pemilik capstone ini"
+}
+```
+
+**Notes:**
+- Hanya alumni yang memiliki capstone bisa review
+- Status: `approved` atau `rejected`
+- Update Request document status
 
 ---
 
-## 🔔 Notification Management Endpoints
+## 🔔 Notifications
 
-### 📋 **Notification Management API Endpoints**
-
-| **Method** | **Endpoint** | **Description** | **Auth Required** | **Role** |
-|------------|--------------|-----------------|-------------------|----------|
-| `POST` | `/api/notifications` | Create notification | ✅ | Any |
-| `GET` | `/api/notifications` | Get user notifications | ✅ | Any |
-| `PATCH` | `/api/notifications/:id/read` | Mark as read | ✅ | Any (owner only) |
-
----
+Base Path: `/api/notifications`
 
 ### 1. Create Notification
 
-**Endpoint:** `POST /api/notifications`
+**POST** `/api/notifications`
 
-**Authentication:** Bearer Token
+Create notification untuk user.
 
-**Required Role:** Any authenticated user
-
-**Request Headers:**
-
+**Headers:**
 ```
-Authorization: Bearer <access-token>
+Authorization: Bearer {token}
 Content-Type: application/json
 ```
 
-**Request Body:**
+**Required Role:** All authenticated users
 
+**Request Body:**
 ```json
 {
-  "userId": "64f7b1234567890abcdef123",
-  "type": "CAPSTONE_REVIEW",
-  "message": "Your capstone selection has been reviewed",
+  "userId": "673...",
+  "type": "request",
+  "message": "Group Alpha mengajukan proposal untuk capstone Anda",
   "data": {
-    "groupId": "64f7b1234567890abcdef999",
-    "capstoneId": "64f7b1234567890abcdef111",
-    "status": "Disetujui"
+    "groupId": "676...",
+    "capstoneId": "675..."
   }
 }
 ```
 
-**Notification Types:**
-- `CAPSTONE_REVIEW` - Review result notification
-- `GROUP_CREATED` - New group creation
-- `SYSTEM_ANNOUNCEMENT` - System-wide announcements
-- `STATUS_UPDATE` - Status change notifications
-
-**Response (201 - Success):**
-
+**Response Success (201):**
 ```json
 {
-  "_id": "64f7b1234567890abcdef888",
-  "userId": "64f7b1234567890abcdef123",
-  "type": "CAPSTONE_REVIEW",
-  "message": "Your capstone selection has been reviewed",
+  "_id": "678...",
+  "userId": "673...",
+  "type": "request",
+  "message": "Group Alpha mengajukan proposal untuk capstone Anda",
   "data": {
-    "groupId": "64f7b1234567890abcdef999",
-    "capstoneId": "64f7b1234567890abcdef111",
-    "status": "Disetujui"
+    "groupId": "676...",
+    "capstoneId": "675..."
   },
   "isRead": false,
-  "createdAt": "2024-09-24T12:00:00.000Z"
+  "createdAt": "2025-11-12T10:00:00.000Z"
 }
 ```
 
----
-
-### 2. Get User Notifications
-
-**Endpoint:** `GET /api/notifications`
-
-**Authentication:** Bearer Token
-
-**Required Role:** Any authenticated user
-
-**Request Headers:**
-
-```
-Authorization: Bearer <access-token>
-```
-
-**Response (200 - Success):**
-
-```json
-[
-  {
-    "_id": "64f7b1234567890abcdef888",
-    "userId": "64f7b1234567890abcdef123",
-    "type": "CAPSTONE_REVIEW",
-    "message": "Your capstone selection has been reviewed",
-    "data": {
-      "groupId": "64f7b1234567890abcdef999",
-      "status": "Disetujui"
-    },
-    "isRead": false,
-    "createdAt": "2024-09-24T12:00:00.000Z"
-  },
-  {
-    "_id": "64f7b1234567890abcdef889",
-    "userId": "64f7b1234567890abcdef123",
-    "type": "GROUP_CREATED",
-    "message": "You have been added to a new group",
-    "data": {
-      "groupId": "64f7b1234567890abcdef999",
-      "groupName": "Kelompok Sistem Informasi A"
-    },
-    "isRead": true,
-    "createdAt": "2024-09-24T10:30:00.000Z"
-  }
-]
-```
-
-**Business Rules:**
-- Returns notifications for authenticated user only
-- Ordered by creation date (newest first)
-- Includes read/unread status
+**Notes:**
+- Notification types: `request`, `approval`, `rejection`, `update`, etc.
+- Data field untuk context tambahan (optional)
 
 ---
 
-### 3. Mark Notification as Read
+### 2. Get Notifications
 
-**Endpoint:** `PATCH /api/notifications/:id/read`
+**GET** `/api/notifications`
 
-**Authentication:** Bearer Token
+Get notifications untuk user yang sedang login.
 
-**Required Role:** Any authenticated user (notification owner only)
-
-**Request Headers:**
-
+**Headers:**
 ```
-Authorization: Bearer <access-token>
+Authorization: Bearer {token}
 ```
 
-**Response (200 - Success):**
+**Required Role:** All authenticated users
 
+**Response Success (200):**
 ```json
 {
-  "_id": "64f7b1234567890abcdef888",
-  "userId": "64f7b1234567890abcdef123",
-  "type": "CAPSTONE_REVIEW",
-  "message": "Your capstone selection has been reviewed",
-  "data": {
-    "groupId": "64f7b1234567890abcdef999",
-    "status": "Disetujui"
-  },
-  "isRead": true,
-  "createdAt": "2024-09-24T12:00:00.000Z",
-  "updatedAt": "2024-09-24T12:30:00.000Z"
-}
-```
-
-**Business Rules:**
-- User can only mark their own notifications as read
-- Updates isRead field from false to true
-- Updates updatedAt timestamp
-
----
-
-## 🔑 Authentication Guide
-
-### Cookie-based Authentication (Recommended)
-
-**How it works:**
-- Tokens automatically sent as HttpOnly cookies
-- No manual token management needed
-- More secure against XSS attacks
-
-**Implementation:**
-
-```javascript
-// No special headers needed, cookies handled automatically
-fetch('/api/users', {
-  method: 'GET',
-  credentials: 'include' // Include cookies
-});
-```
-
-### Header-based Authentication
-
-**How it works:**
-- Manual token management in Authorization header
-- Token stored in localStorage/sessionStorage
-- Requires Bearer prefix
-
-**Implementation:**
-
-```javascript
-fetch('/api/users', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer ' + accessToken
-  }
-});
-```
-
-### Token Lifecycle
-
-1. **Login/Register** → Receive access token (15 min) + refresh token (7 days)
-2. **API Calls** → Use access token
-3. **Token Expiry** → Use refresh token to get new access token
-4. **Logout** → Clear both tokens
-
----
-
-## ⚡ HTTP Status Codes & Error Handling
-
-| Status | Scenario | Response Format |
-|--------|----------|-----------------|
-| `200` | Success | `{ data, message }` |
-| `201` | Created | `{ createdResource, message }` |
-| `400` | Bad Request | `{ message, code?, hint? }` |
-| `401` | Unauthorized | `{ message: "Access token required", code: "NO_TOKEN" }` |
-| `403` | Forbidden | `{ message: "Insufficient permissions", code: "INSUFFICIENT_ROLE" }` |
-| `404` | Not Found | `{ message: "Resource not found" }` |
-| `500` | Server Error | `{ message: "Internal server error" }` |
-
-### Common Error Codes
-
-- `NO_TOKEN` - Access token tidak disertakan
-- `TOKEN_EXPIRED` - Access token sudah expired  
-- `INVALID_TOKEN` - Access token tidak valid
-- `INSUFFICIENT_ROLE` - Role tidak memiliki akses
-- `NO_USER` - User tidak ditemukan
-- `VALIDATION_ERROR` - Request body validation failed
-- `DUPLICATE_EMAIL` - Email sudah terdaftar
-- `FILE_TOO_LARGE` - File melebihi 10MB
-- `INVALID_FILE_TYPE` - File type tidak didukung
-
----
-
-## 📞 Support
-
-Untuk pertanyaan dan bantuan API, silakan lihat dokumentasi utama atau hubungi tim pengembang.
-
-## 🎯 System Overview
-
-**BEPAW3** adalah sistem manajemen capstone project yang menyediakan **27 endpoints** tersebar di **6 modul utama**:
-
-| **Module** | **Endpoints** | **Description** |
-|------------|---------------|------------------|
-| 🔐 **Auth** | 7 | Authentication & authorization system |
-| 👤 **User** | 4 | User management for admin |
-| 🎓 **Capstone** | 7 | Capstone project management |
-| 👥 **Group** | 4 | Student group management |
-| ⭐ **Review** | 2 | Alumni review system |
-| 🔔 **Notification** | 3 | Real-time notification system |
-
-**Total: 27 endpoints** dengan role-based access control dan Google Drive integration.
-
-### ✨ **Key Features:**
-
-- 🔐 **OTP-based Authentication** dengan Google OAuth support
-- 📁 **Google Drive Integration** dengan Shared Drive compatibility
-- 👥 **Group Management** dengan role-based access control
-- ⭐ **Review System** dengan detail group information
-- 🔔 **Real-time Notifications** untuk status updates
-- 🔍 **Advanced Search** dan filtering capabilities
-- 🚀 **Memory-based File Upload** untuk optimal performance
-
----
-
-## 🔐 Authentication Endpoints
-
-**Base URL:** `/api/auth`
-
-| Method | Endpoint | Description | Auth Required | Role Required |
-|--------|----------|-------------|---------------|---------------|
-| `POST` | `/register` | Register user baru dengan OTP verification | ❌ | - |
-| `POST` | `/verify-otp` | Verifikasi OTP setelah register (auto login) | ❌ | - |
-| `POST` | `/login` | Login dengan email dan password | ❌ | - |
-| `POST` | `/refresh` | Refresh access token menggunakan refresh token | ❌ | - |
-| `POST` | `/logout` | Logout dan hapus refresh token | ✅ | Any role |
-| `GET` | `/google` | Initiate Google OAuth login | ❌ | - |
-| `GET` | `/google/callback` | Google OAuth callback endpoint | ❌ | - |
-
-### 📝 **Authentication Usage Examples:**
-
-#### 1. User Registration
-```javascript
-// Register new user
-const registerResponse = await fetch('/api/auth/register', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    name: 'John Doe',
-    email: 'john@mail.ugm.ac.id',
-    password: 'securePassword123'
-  })
-});
-// Response: { message: 'Registrasi berhasil. Cek email untuk kode OTP', email: 'john@mail.ugm.ac.id' }
-```
-
-#### 2. OTP Verification & Auto Login
-```javascript
-// Verify OTP after registration
-const verifyResponse = await fetch('/api/auth/verify-otp', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    email: 'john@mail.ugm.ac.id',
-    otp: '123456'
-  })
-});
-// Response: Auto-login dengan cookies dan user data
-```
-
-#### 3. Standard Login
-```javascript
-// Login with email and password
-const loginResponse = await fetch('/api/auth/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    email: 'john@mail.ugm.ac.id',
-    password: 'securePassword123'
-  })
-});
-// Response: User data dengan cookies untuk session
-```
-
----
-
-## 👤 User Management Endpoints
-
-**Base URL:** `/api/users`
-
-| Method | Endpoint | Description | Auth Required | Role Required |
-|--------|----------|-------------|---------------|---------------|
-| `GET` | `/` | Mendapatkan semua user | ✅ | `admin` |
-| `GET` | `/:id` | Mendapatkan user berdasarkan ID | ✅ | `admin` |
-| `PATCH` | `/:id/role` | Update role user | ✅ | `admin` |
-| `DELETE` | `/:id` | Delete user | ✅ | `admin` |
-
-### 📝 **User Management Usage Examples:**
-
-#### 1. Get All Users (Admin Only)
-```javascript
-const users = await fetch('/api/users', {
-  method: 'GET',
-  headers: { 'Authorization': 'Bearer ' + adminToken }
-});
-// Response: Array of all users with roles and verification status
-```
-
-#### 2. Update User Role
-```javascript
-const updateRole = await fetch('/api/users/64f7b123.../role', {
-  method: 'PATCH',
-  headers: { 
-    'Authorization': 'Bearer ' + adminToken,
-    'Content-Type': 'application/json' 
-  },
-  body: JSON.stringify({ role: 'alumni' })
-});
-// Response: Updated user object with new role
-```
-
----
-
-## 🎓 Capstone Management Endpoints
-
-**Base URL:** `/api/capstones`
-
-| Method | Endpoint | Description | Auth Required | Role Required |
-|--------|----------|-------------|---------------|---------------|
-| `POST` | `/` | Upload capstone dengan proposal file | ✅ | `alumni`, `admin` |
-| `GET` | `/search` | Search capstone berdasarkan judul dan kategori | ✅ | Any role |
-| `GET` | `/` | Mendapatkan semua capstone | ✅ | Any role |
-| `GET` | `/:id` | Mendapatkan detail capstone | ✅ | Any role |
-| `PUT` | `/:id` | Update capstone dengan optional proposal file | ✅ | `alumni`, `admin` |
-| `GET` | `/:id/proposal` | Mendapatkan link proposal (admin only) | ✅ | `admin` |
-| `DELETE` | `/:id` | Delete capstone | ✅ | `alumni`, `admin` |
-
-### 📝 **Capstone Management Usage Examples:**
-
-#### 1. Create Capstone with File Upload
-```javascript
-const formData = new FormData();
-formData.append('judul', 'Machine Learning untuk Prediksi Cuaca');
-formData.append('kategori', 'AI');
-formData.append('deskripsi', 'Sistem prediksi cuaca menggunakan neural network');
-formData.append('proposal', proposalFile); // File object
-
-const capstone = await fetch('/api/capstones', {
-  method: 'POST',
-  headers: { 'Authorization': 'Bearer ' + alumniToken },
-  body: formData
-});
-// Response: Created capstone with Google Drive proposal link
-```
-
-#### 2. Search Capstones
-```javascript
-const searchResults = await fetch('/api/capstones/search?judul=AI&kategori=Machine Learning', {
-  method: 'GET',
-  headers: { 'Authorization': 'Bearer ' + token }
-});
-// Response: Array of matching capstones
-```
-
-#### 3. Get All Available Capstones
-```javascript
-const allCapstones = await fetch('/api/capstones', {
-  method: 'GET',
-  headers: { 'Authorization': 'Bearer ' + token }
-});
-// Response: All capstones with status and alumni info
-```
-
----
-
-## 👥 Group Management Endpoints
-
-**Base URL:** `/api/groups`
-
-| Method | Endpoint | Description | Auth Required | Role Required |
-|--------|----------|-------------|---------------|---------------|
-| `POST` | `/` | Create group baru | ✅ | `admin` |
-| `DELETE` | `/:id` | Delete group | ✅ | `admin` |
-| `POST` | `/:id/pilih` | Pilih capstone untuk group | ✅ | `mahasiswa` (ketua) |
-| `GET` | `/:id` | Get group detail | ✅ | Group members |
-
-### 📝 **Group Management Usage Examples:**
-
-#### 1. Create New Group (Admin Only)
-```javascript
-const newGroup = await fetch('/api/groups', {
-  method: 'POST',
-  headers: { 
-    'Authorization': 'Bearer ' + adminToken,
-    'Content-Type': 'application/json' 
-  },
-  body: JSON.stringify({
-    namaKelompok: 'Kelompok Sistem Informasi A',
-    ketua: 'ketuaUserId123',
-    anggota: ['userId1', 'userId2', 'userId3']
-  })
-});
-// Response: Created group with members and leader info
-```
-
-#### 2. Group Leader Chooses Capstone
-```javascript
-const chooseCapstone = await fetch('/api/groups/groupId123/pilih', {
-  method: 'POST',
-  headers: { 
-    'Authorization': 'Bearer ' + ketuaToken,
-    'Content-Type': 'application/json' 
-  },
-  body: JSON.stringify({
-    capstoneId: 'capstoneId456'
-  })
-});
-// Response: Updated group with selected capstone, triggers notification to alumni
-```
-
-#### 3. Get Group Details (Members Only)
-```javascript
-const groupDetails = await fetch('/api/groups/groupId123', {
-  method: 'GET',
-  headers: { 'Authorization': 'Bearer ' + memberToken }
-});
-// Response: Complete group info with members, leader, and selected capstone
-```
-
----
-
-## ⭐ Review Management Endpoints
-
-**Base URL:** `/api/reviews`
-
-| Method | Endpoint | Description | Auth Required | Role Required |
-|--------|----------|-------------|---------------|---------------|
-| `GET` | `/pending` | Get pending group reviews for alumni's capstones | ✅ | `alumni` |
-| `POST` | `/:id` | Review group capstone request | ✅ | `alumni` |
-
-### 📝 **Review Management Usage Examples:**
-
-#### 1. Get Pending Reviews (Alumni Only)
-```javascript
-const pendingReviews = await fetch('/api/reviews/pending', {
-  method: 'GET',
-  headers: { 'Authorization': 'Bearer ' + alumniToken }
-});
-// Response: { message: "Pending reviews", pendingGroups: [...], count: 3 }
-```
-
-#### 2. Review Group Selection
-```javascript
-const reviewResult = await fetch('/api/reviews/groupId123', {
-  method: 'POST',
-  headers: { 
-    'Authorization': 'Bearer ' + alumniToken,
-    'Content-Type': 'application/json' 
-  },
-  body: JSON.stringify({
-    status: 'Disetujui' // or 'Ditolak'
-  })
-});
-// Response: Updated group with review status, auto-notification to group leader
-```
-
----
-
-## 🔔 Notification Management Endpoints
-
-**Base URL:** `/api/notifications`
-
-| Method | Endpoint | Description | Auth Required | Role Required |
-|--------|----------|-------------|---------------|---------------|
-| `POST` | `/` | Create new notification | ✅ | Any role |
-| `GET` | `/` | Get user notifications | ✅ | Any role |
-| `PATCH` | `/:id/read` | Mark notification as read | ✅ | Any role |
-
-### 📝 **Notification Management Usage Examples:**
-
-#### 1. Get User Notifications
-```javascript
-const notifications = await fetch('/api/notifications', {
-  method: 'GET',
-  headers: { 'Authorization': 'Bearer ' + userToken }
-});
-// Response: Array of notifications ordered by newest first
-/* Example response:
-[
-  {
-    _id: "notifId123",
-    type: "CAPSTONE_REVIEW",
-    message: "Your capstone selection has been reviewed",
-    isRead: false,
-    createdAt: "2024-09-24T10:30:00.000Z"
-  }
-]
-*/
-```
-
-#### 2. Mark Notification as Read
-```javascript
-const markRead = await fetch('/api/notifications/notifId123/read', {
-  method: 'PATCH',
-  headers: { 'Authorization': 'Bearer ' + userToken }
-});
-// Response: Updated notification with isRead: true
-```
-
-#### 3. Create System Notification
-```javascript
-const newNotification = await fetch('/api/notifications', {
-  method: 'POST',
-  headers: { 
-    'Authorization': 'Bearer ' + adminToken,
-    'Content-Type': 'application/json' 
-  },
-  body: JSON.stringify({
-    userId: 'targetUserId',
-    type: 'SYSTEM_ANNOUNCEMENT',
-    message: 'New capstone project available for selection',
-    data: {
-      capstoneId: 'newCapstoneId'
-    }
-  })
-});
-// Response: Created notification object
-```
-
-**Notification Types:**
-- `CAPSTONE_REVIEW` - Review hasil capstone selection
-- `GROUP_CREATED` - Group baru dibuat  
-- `SYSTEM_ANNOUNCEMENT` - Pengumuman sistem
-- `STATUS_UPDATE` - Update status project
-
----
-
-## 🚀 Complete Workflow Examples
-
-### 🎓 Student Registration to Project Completion
-
-```javascript
-// 1. Student registers
-const register = await fetch('/api/auth/register', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    name: 'Student Name',
-    email: 'student@mail.ugm.ac.id',
-    password: 'password123'
-  })
-});
-
-// 2. Verify OTP from email
-const verify = await fetch('/api/auth/verify-otp', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    email: 'student@mail.ugm.ac.id',
-    otp: '123456'
-  })
-});
-
-// 3. Check available capstones
-const capstones = await fetch('/api/capstones', {
-  headers: { 'Authorization': 'Bearer ' + studentToken }
-});
-
-// 4. Wait for admin to create group and assign as leader
-
-// 5. Choose capstone as group leader
-const chooseCapstone = await fetch('/api/groups/groupId/pilih', {
-  method: 'POST',
-  headers: { 
-    'Authorization': 'Bearer ' + studentToken,
-    'Content-Type': 'application/json' 
-  },
-  body: JSON.stringify({ capstoneId: 'selectedCapstoneId' })
-});
-
-// 6. Check notifications for review updates
-const notifications = await fetch('/api/notifications', {
-  headers: { 'Authorization': 'Bearer ' + studentToken }
-});
-```
-
-### 🎓 Alumni Project Management
-
-```javascript
-// 1. Alumni creates capstone project
-const formData = new FormData();
-formData.append('judul', 'AI-Powered Learning System');
-formData.append('kategori', 'Education Technology');
-formData.append('deskripsi', 'Intelligent tutoring system using machine learning');
-formData.append('proposal', proposalFile);
-
-const newCapstone = await fetch('/api/capstones', {
-  method: 'POST',
-  headers: { 'Authorization': 'Bearer ' + alumniToken },
-  body: formData
-});
-
-// 2. Check for pending group reviews
-const pendingReviews = await fetch('/api/reviews/pending', {
-  headers: { 'Authorization': 'Bearer ' + alumniToken }
-});
-
-// 3. Review group selections
-for (const group of pendingReviews.pendingGroups) {
-  const review = await fetch(`/api/reviews/${group._id}`, {
-    method: 'POST',
-    headers: { 
-      'Authorization': 'Bearer ' + alumniToken,
-      'Content-Type': 'application/json' 
+  "message": "User ID: 673...",
+  "data": [
+    {
+      "_id": "678...",
+      "userId": "673...",
+      "type": "request",
+      "message": "Group Alpha mengajukan proposal untuk capstone Anda",
+      "data": {
+        "groupId": "676...",
+        "capstoneId": "675..."
+      },
+      "isRead": false,
+      "createdAt": "2025-11-12T10:00:00.000Z"
     },
-    body: JSON.stringify({
-      status: 'Disetujui' // Review each group
-    })
-  });
-}
-```
-
-### 👨‍💼 Admin System Management
-
-```javascript
-// 1. Get all users
-const allUsers = await fetch('/api/users', {
-  headers: { 'Authorization': 'Bearer ' + adminToken }
-});
-
-// 2. Create student groups
-const newGroup = await fetch('/api/groups', {
-  method: 'POST',
-  headers: { 
-    'Authorization': 'Bearer ' + adminToken,
-    'Content-Type': 'application/json' 
-  },
-  body: JSON.stringify({
-    namaKelompok: 'Team Alpha',
-    ketua: 'studentId1',
-    anggota: ['studentId1', 'studentId2', 'studentId3']
-  })
-});
-
-// 3. Send system announcements
-const announcement = await fetch('/api/notifications', {
-  method: 'POST',
-  headers: { 
-    'Authorization': 'Bearer ' + adminToken,
-    'Content-Type': 'application/json' 
-  },
-  body: JSON.stringify({
-    userId: 'allStudents', // Or specific user ID
-    type: 'SYSTEM_ANNOUNCEMENT',
-    message: 'Deadline for capstone selection: October 15, 2024'
-  })
-});
-```
-
----
-
-## 🔑 Authentication Methods
-
-### Cookie-based Authentication (Recommended)
-
-```javascript
-// Automatic cookie handling
-fetch('/api/users', {
-  method: 'GET',
-  credentials: 'include' // Include cookies automatically
-});
-```
-
-### Header-based Authentication
-
-```javascript
-// Manual token in headers
-fetch('/api/users', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer ' + accessToken
-  }
-});
-```
-
----
-
-## ⚡ HTTP Status Codes
-
-| Status Code | Description | When It Occurs |
-|-------------|-------------|----------------|
-| `200` | Success | Request processed successfully |
-| `201` | Created | Resource created successfully |
-| `400` | Bad Request | Invalid data or missing fields |
-| `401` | Unauthorized | Invalid/expired token or no token |
-| `403` | Forbidden | Valid token but insufficient permissions |
-| `404` | Not Found | Resource not found or user doesn't exist |
-| `500` | Internal Server Error | Server-side error occurred |
-
----
-
-## 🛡️ Error Handling Examples
-
-```javascript
-// Comprehensive error handling
-async function makeAPICall(endpoint, options) {
-  try {
-    const response = await fetch(endpoint, options);
-    
-    if (!response.ok) {
-      const error = await response.json();
-      
-      switch (response.status) {
-        case 400:
-          throw new Error(`Validation Error: ${error.message}`);
-        case 401:
-          throw new Error(`Authentication Error: ${error.message}`);
-        case 403:
-          throw new Error(`Permission Error: ${error.message}`);
-        case 404:
-          throw new Error(`Not Found: ${error.message}`);
-        case 500:
-          throw new Error(`Server Error: ${error.message}`);
-        default:
-          throw new Error(`API Error: ${error.message}`);
-      }
+    {
+      "_id": "679...",
+      "userId": "673...",
+      "type": "approval",
+      "message": "Proposal Anda telah disetujui",
+      "isRead": true,
+      "createdAt": "2025-11-11T15:00:00.000Z"
     }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('API Call failed:', error);
-    throw error;
-  }
+  ]
 }
+```
 
-// Usage example
-try {
-  const capstones = await makeAPICall('/api/capstones', {
-    method: 'GET',
-    headers: { 'Authorization': 'Bearer ' + token }
-  });
-  
-  console.log('Capstones loaded:', capstones);
-} catch (error) {
-  console.error('Failed to load capstones:', error.message);
+**Notes:**
+- Sorted by newest first
+- Menampilkan semua notifikasi user (read & unread)
+
+---
+
+### 3. Mark as Read
+
+**PATCH** `/api/notifications/:id/read`
+
+Mark notification sebagai sudah dibaca.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Required Role:** All authenticated users
+
+**URL Parameters:**
+- `id` - Notification ID
+
+**Response Success (200):**
+```json
+{
+  "_id": "678...",
+  "userId": "673...",
+  "type": "request",
+  "message": "Group Alpha mengajukan proposal untuk capstone Anda",
+  "isRead": true,
+  "updatedAt": "2025-11-12T11:00:00.000Z"
 }
 ```
 
 ---
 
-## 📞 Support
+## 🔒 Authentication & Authorization
 
-Untuk pertanyaan dan bantuan API, silakan lihat dokumentasi utama atau hubungi tim pengembang.
+### Cookie-Based Authentication
+
+Setiap request yang memerlukan authentication harus include salah satu:
+
+**Option 1: Cookie (Auto-sent by browser)**
+```
+Cookie: token=eyJhbGc...
+```
+
+**Option 2: Authorization Header**
+```
+Authorization: Bearer eyJhbGc...
+```
+
+### Token Details
+
+- **Type:** JWT (JSON Web Token)
+- **Expiry:** 24 hours (86400 seconds)
+- **Storage:** httpOnly cookie (XSS protection)
+- **Payload:**
+  ```json
+  {
+    "id": "user_id",
+    "email": "user@mail.ugm.ac.id",
+    "role": "mahasiswa",
+    "iat": 1699876543,
+    "exp": 1699962943
+  }
+  ```
+
+### Role-Based Access Control (RBAC)
+
+| Role | Permissions |
+|------|-------------|
+| `admin` | Full access - manage users, capstones, groups |
+| `dosen` | Read users, view groups, assign reviews |
+| `alumni` | Create/manage capstones, review group proposals |
+| `mahasiswa` | Join groups, choose capstones (ketua only) |
+| `guest` | Read-only access (limited) |
+
+### Error Responses
+
+**401 Unauthorized:**
+```json
+{
+  "message": "Token tidak ditemukan"
+}
+// or
+{
+  "message": "Token tidak valid"
+}
+```
+
+**403 Forbidden:**
+```json
+{
+  "message": "Akses ditolak. Role tidak memiliki izin."
+}
+```
+
+---
+
+## 📝 Notes
+
+### Email Domain Validation
+
+- `@mail.ugm.ac.id` → Auto-assigned role: `mahasiswa`
+- `@ugm.ac.id` → Auto-assigned role: `dosen`
+- Non-UGM domains: Only allowed for pre-created admin users
+
+### Data Model Key Points
+
+**Capstone:**
+- Ketua (1 alumni) + Anggota (array alumni) - SEPARATED
+- linkProposal with access control (admin + approved groups only)
+
+**Group:**
+- Ketua (1 mahasiswa) + Anggota (max 3 mahasiswa) - SEPARATED
+- Max total members: 4 (1 ketua + 3 anggota)
+
+**User:**
+- NIM & Prodi fields only for mahasiswa/alumni
+- Sparse unique index on NIM (allows null, unique when present)
+
+### Frontend Integration
+
+**Fetch API Example:**
+```javascript
+// With cookies (recommended)
+fetch('/api/capstones', {
+  credentials: 'include'  // Auto-send cookies
+})
+
+// With header
+fetch('/api/capstones', {
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+})
+```
+
+**Axios Example:**
+```javascript
+// Global config
+axios.defaults.withCredentials = true;
+
+// Or per request
+axios.get('/api/capstones', {
+  withCredentials: true
+})
+```
+
+---
+
+**Last Updated:** November 13, 2025  
+**Version:** 2.0  
+**Base URL:** `http://localhost:5000/api`

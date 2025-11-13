@@ -3,8 +3,6 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 require('dotenv').config();
-const passport = require('passport');
-require('./config/passport');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const capstoneRoutes = require('./routes/capstoneRoutes');
@@ -25,7 +23,6 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser()); // Parse cookies
-app.use(passport.initialize());
 
 // Routes
 app.use('/api/auth', authRoutes);

@@ -14,7 +14,7 @@ exports.reviewGroup = async (requestId, status, alumniId) => {
     })
     .populate({
       path: "capstone",
-      select: "judul kategori deskripsi alumni"
+      select: "judul kategori abstrak ketua"
     });
 
   if (!request) throw new Error("Request not found");
@@ -22,7 +22,7 @@ exports.reviewGroup = async (requestId, status, alumniId) => {
   if (!request.capstone) throw new Error("Capstone not found in request");
 
   // Validasi: Alumni hanya bisa review capstone milik mereka sendiri
-  if (request.capstone.alumni.toString() !== alumniId) {
+  if (request.capstone.ketua.toString() !== alumniId) {
     throw new Error("You can only review applications for your own capstone");
   }
 
@@ -30,10 +30,11 @@ exports.reviewGroup = async (requestId, status, alumniId) => {
   request.status = status;
   await request.save();
 
-  // Update status capstone jika diterima
+  // Update status capstone berdasarkan kondisi
   if (status === "Diterima") {
+    // Jika diterima, capstone jadi "Tidak Tersedia"
     const capstone = await Capstone.findById(request.capstone);
-    capstone.status = "Dipilih";
+    capstone.status = "Tidak Tersedia";
     await capstone.save();
 
     // Tolak semua request lain yang masih menunggu review untuk capstone ini
@@ -45,6 +46,17 @@ exports.reviewGroup = async (requestId, status, alumniId) => {
       },
       { status: "Ditolak" }
     );
+  } else if (status === "Ditolak") {
+    // Jika ditolak, cek apakah masih ada >= 3 pending request
+    const pendingCount = await Request.countDocuments({
+      capstone: request.capstone._id,
+      status: "Menunggu Review"
+    });
+    
+    // Jika pending request < 3, kembalikan status ke "Tersedia"
+    if (pendingCount < 3) {
+      await Capstone.findByIdAndUpdate(request.capstone._id, { status: "Tersedia" });
+    }
   }
 
   // Kirim notifikasi ke ketua kelompok tentang hasil review
@@ -66,13 +78,13 @@ exports.reviewGroup = async (requestId, status, alumniId) => {
     })
     .populate({
       path: "capstone",
-      select: "judul kategori deskripsi"
+      select: "judul kategori abstrak"
     });
 };
 
 exports.getPendingGroupsForAlumni = async (alumniId) => {
-  // Cari semua capstone milik alumni ini
-  const alumniCapstones = await Capstone.find({ alumni: alumniId }).select('_id');
+  // Cari semua capstone milik alumni ini (sebagai ketua)
+  const alumniCapstones = await Capstone.find({ ketua: alumniId }).select('_id');
   const capstoneIds = alumniCapstones.map(c => c._id);
 
   // Cari semua request yang statusnya pending dan capstone milik alumni
@@ -85,12 +97,15 @@ exports.getPendingGroupsForAlumni = async (alumniId) => {
       { path: "ketua", select: "name email" },
       { path: "anggota", select: "name email" }
     ]
-  }).populate("capstone", "judul kategori deskripsi");
+  }).populate("capstone", "judul kategori abstrak");
 
   // Ambil group dari request
-    // Ambil group + request id
+    // Ambil group + request id + alasan
   return requests.map(req => ({
     requestId: req._id,
-    group: req.group
+    group: req.group,
+    capstone: req.capstone,
+    alasan: req.alasan,
+    createdAt: req.createdAt
   }));
 };

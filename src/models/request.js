@@ -11,6 +11,10 @@ const requestSchema = new mongoose.Schema({
         ref: "Capstone",
         required: true
     },
+    alasan: {
+        type: String,
+        required: true
+    },
     status: {
         type: String,
         enum: ["Menunggu Review", "Diterima", "Ditolak"],
