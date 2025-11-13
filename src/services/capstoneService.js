@@ -148,8 +148,12 @@ exports.getAllCapstones = async (userId, userRole) => {
   }
 
   // For non-admin users, check which capstones they have access to
+  // Find groups where user is ketua OR anggota
   const userGroups = await Group.find({
-    anggota: userId
+    $or: [
+      { ketua: userId },
+      { anggota: userId }
+    ]
   }).select('_id');
 
   const userGroupIds = userGroups.map(g => g._id);
@@ -211,12 +215,13 @@ exports.getCapstoneDetail = async (id, userId, userRole) => {
     }).populate("group");
 
     if (approvedRequest && approvedRequest.group) {
-      // Check if user is member of the approved group
+      // Check if user is ketua or member of the approved group
+      const isKetua = approvedRequest.group.ketua.toString() === userId.toString();
       const isMember = approvedRequest.group.anggota.some(
         memberId => memberId.toString() === userId.toString()
       );
       
-      if (isMember) {
+      if (isKetua || isMember) {
         hasAccessToProposal = true;
       }
     }

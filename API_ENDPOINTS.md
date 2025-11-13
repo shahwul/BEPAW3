@@ -63,13 +63,15 @@ Base URL: `http://localhost:5000/api`
 | POST | `/:id/pilih` | ✅ | mahasiswa (ketua) | Ketua pilih capstone untuk group |
 | PATCH | `/:id/upload-cv` | ✅ | mahasiswa (ketua) | Ketua upload CV gabungan |
 | PATCH | `/:id/report-issue` | ✅ | mahasiswa (ketua) | Ketua report data salah di tim |
+| GET | `/my-requests` | ✅ | mahasiswa | Get my group's capstone requests |
 
 ### 📝 Reviews (`/api/reviews`)
 
 | Method | Endpoint | Auth Required | Role | Description |
 |--------|----------|---------------|------|-------------|
-| GET | `/pending` | ✅ | alumni | Get pending reviews for alumni's capstones |
+| GET | `/my-requests` | ✅ | alumni | Get all capstone requests for alumni's capstones |
 | POST | `/:id` | ✅ | alumni | Alumni review group proposal |
+| POST | `/auto-reject` | ✅ | admin | Manual trigger auto-reject expired requests (>3 hari) |
 
 ### 🔔 Notifications (`/api/notifications`)
 
@@ -1766,15 +1768,96 @@ Content-Type: application/json
 
 ---
 
+### 9. Get My Requests (Mahasiswa)
+
+**GET** `/api/groups/my-requests`
+
+Mahasiswa get semua capstone requests untuk group mereka (untuk pop-up notifikasi).
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Required Role:** `mahasiswa`
+
+**Response Success (200):**
+```json
+{
+  "message": "Your capstone requests",
+  "group": {
+    "_id": "676xyz",
+    "namaTim": "Team Innovate",
+    "tema": "Smart City Solutions"
+  },
+  "requests": [
+    {
+      "requestId": "673abc123",
+      "capstone": {
+        "_id": "675mno",
+        "judul": "Smart Waste Management System",
+        "status": "Tidak Tersedia",
+        "createdAt": "2025-10-01T10:00:00.000Z",
+        "proposalUrl": "https://drive.google.com/file/d/xxxxx/view"
+      },
+      "alasan": "Kami tertarik dengan topik ini karena sesuai dengan passion tim dalam sustainability.",
+      "status": "Diterima",
+      "createdAt": "2025-11-13T10:00:00.000Z"
+    },
+    {
+      "requestId": "673def456",
+      "capstone": {
+        "_id": "675pqr",
+        "judul": "IoT Traffic Monitoring System",
+        "status": "Tersedia",
+        "createdAt": "2025-10-05T08:00:00.000Z"
+      },
+      "alasan": "Tim kami berpengalaman dalam smart city projects.",
+      "status": "Menunggu Review",
+      "createdAt": "2025-11-12T08:30:00.000Z"
+    },
+    {
+      "requestId": "673ghi789",
+      "capstone": {
+        "_id": "675stu",
+        "judul": "Electric Vehicle Route Optimizer",
+        "status": "Tersedia",
+        "createdAt": "2025-10-03T12:00:00.000Z"
+      },
+      "alasan": "Kami sudah melakukan riset tentang algoritma optimasi rute.",
+      "status": "Ditolak",
+      "createdAt": "2025-11-11T14:20:00.000Z"
+    }
+  ],
+  "count": 3
+}
+```
+
+**Response Error (404):**
+```json
+{
+  "message": "You are not part of any group yet"
+}
+```
+
+**Notes:**
+- Otomatis detect group dari user yang login (ketua atau anggota)
+- `proposalUrl` hanya muncul jika `status` request = "Diterima"
+- Requests di-sort dari terbaru (createdAt descending)
+- Mahasiswa tidak perlu tahu groupId mereka
+- Untuk pop-up notifikasi mahasiswa
+
+---
+
 ## 📝 Reviews
 
 Base Path: `/api/reviews`
 
-### 1. Get Pending Reviews
+### 1. Get My Requests (Alumni)
 
-**GET** `/api/reviews/pending`
+**GET** `/api/reviews/my-requests`
 
-Alumni get pending reviews untuk capstone mereka.
+Alumni get all capstone requests untuk capstone mereka (semua status: Menunggu Review, Diterima, Ditolak).
 
 **Headers:**
 ```
@@ -1786,33 +1869,82 @@ Authorization: Bearer {token}
 **Response Success (200):**
 ```json
 {
-  "message": "Pending group reviews for your capstones",
-  "pendingGroups": [
+  "message": "All capstone requests for your projects",
+  "requests": [
     {
-      "_id": "676...",
-      "tema": "Healthcare Technology",
-      "namaTim": "Team Alpha",
-      "ketua": {
-        "_id": "673abc...",
-        "name": "Student Lead",
-        "email": "student@mail.ugm.ac.id"
+      "requestId": "673abc123",
+      "group": {
+        "_id": "676xyz",
+        "namaTim": "Team Innovate",
+        "tema": "Smart City Solutions",
+        "ketua": {
+          "_id": "674def",
+          "name": "Ahmad Zulfikar",
+          "email": "ahmad@mail.ugm.ac.id",
+          "nim": "21/123456/TK/12345",
+          "prodi": "Teknik Komputer"
+        },
+        "anggota": [
+          {
+            "_id": "674ghi",
+            "name": "Siti Nurhaliza",
+            "email": "siti@mail.ugm.ac.id",
+            "nim": "21/123457/TK/12346",
+            "prodi": "Teknik Komputer"
+          }
+        ]
       },
-      "anggota": [...],
       "capstone": {
-        "_id": "675...",
-        "judul": "Sistem Informasi Rumah Sakit"
+        "_id": "675mno",
+        "judul": "Smart Waste Management System",
+        "kategori": "Pengolahan Sampah",
+        "abstrak": "Sistem manajemen sampah berbasis IoT..."
       },
-      "status": "pending",
-      "createdAt": "2025-11-12T10:00:00.000Z"
+      "alasan": "Kami tertarik dengan topik ini karena sesuai dengan passion tim dalam sustainability.",
+      "status": "Menunggu Review",
+      "createdAt": "2025-11-13T08:30:00.000Z"
+    },
+    {
+      "requestId": "673pqr456",
+      "group": {
+        "_id": "676aaa",
+        "namaTim": "Team Smart",
+        "tema": "IoT Solutions"
+      },
+      "capstone": {
+        "_id": "675bbb",
+        "judul": "Traffic Monitoring System",
+        "kategori": "Smart City"
+      },
+      "alasan": "Tim kami berpengalaman dalam smart city projects.",
+      "status": "Diterima",
+      "createdAt": "2025-11-12T14:20:00.000Z"
+    },
+    {
+      "requestId": "673aaa789",
+      "group": {
+        "_id": "676ccc",
+        "namaTim": "Team Optimizer"
+      },
+      "capstone": {
+        "_id": "675ddd",
+        "judul": "Route Optimizer"
+      },
+      "alasan": "Kami sudah riset tentang algoritma optimasi.",
+      "status": "Ditolak",
+      "createdAt": "2025-11-11T09:15:00.000Z"
     }
   ],
-  "count": 1
+  "count": 3
 }
 ```
 
 **Notes:**
-- Hanya menampilkan group yang pilih capstone milik alumni ini
-- Status `pending` (belum di-review)
+
+- Menampilkan **semua request** untuk capstone milik alumni (semua status)
+- Data di-sort dari terbaru (`createdAt` descending)
+- Status bisa: "Menunggu Review", "Diterima", atau "Ditolak"
+- Untuk pop-up notifikasi alumni dengan tombol approve/decline
 
 ---
 
@@ -1820,7 +1952,7 @@ Authorization: Bearer {token}
 
 **POST** `/api/reviews/:id`
 
-Alumni approve/reject group proposal.
+Alumni approve/reject group request.
 
 **Headers:**
 ```
@@ -1831,26 +1963,30 @@ Content-Type: application/json
 **Required Role:** `alumni`
 
 **URL Parameters:**
-- `id` - Group ID
+- `id` - Request ID (bukan Group ID)
 
 **Request Body:**
 ```json
 {
-  "status": "approved"
-  // or "rejected"
+  "status": "Diterima"
+  // or "Ditolak"
 }
 ```
 
 **Response Success (200):**
 ```json
 {
-  "message": "Group approved",
+  "message": "Group diterima",
   "group": {
     "_id": "676...",
     "tema": "Healthcare Technology",
     "namaTim": "Team Alpha",
-    "status": "approved",
-    ...
+    "ketua": { ... },
+    "anggota": [ ... ],
+    "capstone": {
+      "_id": "675...",
+      "judul": "Sistem Informasi Rumah Sakit"
+    }
   }
 }
 ```
@@ -1858,11 +1994,11 @@ Content-Type: application/json
 **Response Error (400):**
 ```json
 {
-  "message": "Group belum memilih capstone"
+  "message": "Request not found"
 }
 // or
 {
-  "message": "Anda bukan pemilik capstone ini"
+  "message": "You can only review applications for your own capstone"
 }
 ```
 
@@ -1870,6 +2006,53 @@ Content-Type: application/json
 - Hanya alumni yang memiliki capstone bisa review
 - Status: `approved` atau `rejected`
 - Update Request document status
+
+---
+
+### 3. Auto-Reject Expired Requests (Admin Only)
+
+**POST** `/api/reviews/auto-reject`
+
+Manual trigger untuk auto-reject semua request yang sudah lebih dari 3 hari tidak diproses.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**Required Role:** `admin`
+
+**Response Success (200):**
+```json
+{
+  "message": "Auto-reject completed successfully",
+  "rejected": 5,
+  "capstoneUpdated": [
+    "Smart Waste Management System",
+    "IoT Traffic Monitoring"
+  ]
+}
+```
+
+**Response Error (500):**
+```json
+{
+  "message": "Error message"
+}
+```
+
+**Process:**
+1. Cari semua request dengan status "Menunggu Review" yang dibuat > 72 jam lalu
+2. Update status menjadi "Ditolak"
+3. Kirim notifikasi ke ketua kelompok
+4. Jika capstone memiliki pending request < 3, update status jadi "Tersedia"
+
+**Notes:**
+- Endpoint ini untuk manual trigger, sistem juga menjalankan auto-reject otomatis setiap hari jam 00:00 WIB
+- Cron job: `0 0 * * *` (midnight daily, Asia/Jakarta timezone)
+- Request yang sudah > 3 hari (72 jam) otomatis ditolak
+- Notifikasi otomatis dikirim ke ketua kelompok yang requestnya ditolak
 
 ---
 

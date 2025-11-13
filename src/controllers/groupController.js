@@ -123,3 +123,18 @@ exports.resolveReportedIssue = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
+
+exports.getMyRequests = async (req, res) => {
+  try {
+    const result = await groupService.getMyRequests(req.user.id);
+    res.json({
+      message: "Your capstone requests",
+      ...result
+    });
+  } catch (err) {
+    if (err.message === "You are not part of any group yet") {
+      return res.status(404).json({ message: err.message });
+    }
+    res.status(500).json({ message: err.message });
+  }
+};

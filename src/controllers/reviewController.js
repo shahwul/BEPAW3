@@ -1,4 +1,5 @@
 const reviewService = require("../services/reviewService");
+const requestCleanupService = require("../services/requestCleanupService");
 
 exports.reviewGroup = async (req, res) => {
   try {
@@ -16,13 +17,27 @@ exports.reviewGroup = async (req, res) => {
   }
 };
 
-exports.getPendingReviews = async (req, res) => {
+exports.getMyRequests = async (req, res) => {
   try {
-    const pendingGroups = await reviewService.getPendingGroupsForAlumni(req.user.id);
+    const requests = await reviewService.getRequestsForAlumni(req.user.id);
+    
     res.json({
-      message: "Pending group reviews for your capstones",
-      pendingGroups,
-      count: pendingGroups.length
+      message: "All capstone requests for your projects",
+      requests,
+      count: requests.length
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.triggerAutoReject = async (req, res) => {
+  try {
+    const result = await requestCleanupService.autoRejectExpiredRequests();
+    res.json({
+      message: "Auto-reject completed successfully",
+      rejected: result.rejected,
+      capstoneUpdated: result.capstoneUpdated
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

@@ -424,3 +424,56 @@ exports.getGroupStats = async () => {
     }
   };
 };
+
+exports.getMyRequests = async (userId) => {
+  // Find group where user is ketua or anggota
+  const group = await Group.findOne({
+    $or: [
+      { ketua: userId },
+      { anggota: userId }
+    ]
+  }).select('_id namaTim tema');
+
+  if (!group) {
+    throw new Error("You are not part of any group yet");
+  }
+
+  // Find all requests for this group
+  const requests = await Request.find({ group: group._id })
+    .populate({
+      path: "capstone",
+      select: "judul status createdAt proposalUrl proposalFileId"
+    })
+    .sort({ createdAt: -1 }); // Sort dari terbaru
+
+  // Map requests dengan access control untuk proposalUrl
+  const requestsWithAccess = requests.map(req => {
+    const capstoneObj = req.capstone ? req.capstone.toObject() : null;
+    
+    if (capstoneObj) {
+      // Hanya tampilkan proposalUrl jika request di-approve
+      if (req.status !== "Diterima") {
+        delete capstoneObj.proposalUrl;
+        delete capstoneObj.proposalFileId;
+      }
+    }
+    
+    return {
+      requestId: req._id,
+      capstone: capstoneObj,
+      alasan: req.alasan,
+      status: req.status,
+      createdAt: req.createdAt
+    };
+  });
+
+  return {
+    group: {
+      _id: group._id,
+      namaTim: group.namaTim,
+      tema: group.tema
+    },
+    requests: requestsWithAccess,
+    count: requestsWithAccess.length
+  };
+};

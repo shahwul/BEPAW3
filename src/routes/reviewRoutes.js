@@ -5,10 +5,13 @@ const role = require("../middlewares/role");
 
 const router = express.Router();
 
-// alumni get pending reviews for their capstones
-router.get("/pending", auth, role(["alumni"]), reviewController.getPendingReviews);
+// alumni get all requests for their capstones
+router.get("/my-requests", auth, role(["alumni"]), reviewController.getMyRequests);
 
 // alumni review group
 router.post("/:id", auth, role(["alumni"]), reviewController.reviewGroup);
+
+// admin: manual trigger auto-reject expired requests
+router.post("/auto-reject", auth, role(["admin"]), reviewController.triggerAutoReject);
 
 module.exports = router;
