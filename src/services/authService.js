@@ -3,7 +3,7 @@ const User = require("../models/user");
 const otpService = require("./otpService");
 const tokenService = require("./tokenService");
 
-exports.register = async ({ email, password, name, nim, prodi }) => {
+exports.register = async ({ email, password}) => {
   // Validasi domain email UGM
   const isUGMMahasiswa = email.endsWith("@mail.ugm.ac.id");
   const isUGMAdmin = email.endsWith("@ugm.ac.id");
