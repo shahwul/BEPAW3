@@ -72,6 +72,7 @@ Base URL: `http://localhost:5000/api`
 | GET | `/my-requests` | ✅ | alumni | Get all capstone requests for alumni's capstones |
 | POST | `/:id` | ✅ | alumni | Alumni review group proposal |
 | POST | `/auto-reject` | ✅ | admin | Manual trigger auto-reject expired requests (>3 hari) |
+| POST | `/cron/auto-reject` | ✅ API Key | - | Cron job endpoint (external service) |
 
 ### 🔔 Notifications (`/api/notifications`)
 
@@ -2053,6 +2054,61 @@ Content-Type: application/json
 - Cron job: `0 0 * * *` (midnight daily, Asia/Jakarta timezone)
 - Request yang sudah > 3 hari (72 jam) otomatis ditolak
 - Notifikasi otomatis dikirim ke ketua kelompok yang requestnya ditolak
+
+---
+
+### 4. Auto-Reject (Cron Job Endpoint)
+
+**POST** `/api/reviews/cron/auto-reject`
+
+Endpoint khusus untuk cron job external (cron-job.org, GitHub Actions, dll). Menggunakan API Key yang tidak expire.
+
+**Headers:**
+```
+X-API-Key: {your-cron-api-key}
+```
+
+**Required:** API Key dari environment variable `CRON_API_KEY`
+
+**Response Success (200):**
+```json
+{
+  "message": "Auto-reject completed successfully",
+  "rejected": 5,
+  "capstoneUpdated": [
+    "Smart Waste Management System",
+    "IoT Traffic Monitoring"
+  ]
+}
+```
+
+**Response Error (401):**
+```json
+{
+  "message": "API Key required"
+}
+```
+
+**Response Error (403):**
+```json
+{
+  "message": "Invalid API Key"
+}
+```
+
+**Notes:**
+- Endpoint ini untuk external cron service (tidak pakai JWT token yang expire)
+- API Key disimpan di environment variable `CRON_API_KEY`
+- Sama functionality dengan `/auto-reject` tapi tidak perlu login
+- Setup API Key di cron-job.org header: `X-API-Key: your-secret-key`
+
+**Setup Cron-job.org:**
+```
+URL: https://your-api.com/api/reviews/cron/auto-reject
+Method: POST
+Headers: X-API-Key: your-secret-cron-api-key
+Schedule: 0 0 * * * (daily at 00:00)
+```
 
 ---
 
