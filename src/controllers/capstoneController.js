@@ -1,4 +1,5 @@
 const capstoneService = require("../services/capstoneService");
+const { formatResponse } = require("../utils/responseFormatter");
 
 exports.createCapstone = async (req, res) => {
   try {
@@ -31,7 +32,7 @@ exports.getAllCapstones = async (req, res) => {
       req.user?._id || null,
       req.user?.role || null
     );
-    res.json(capstones);
+    res.json(formatResponse(capstones));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -46,7 +47,7 @@ exports.getCapstoneDetail = async (req, res) => {
     );
     if (!capstone) return res.status(404).json({ message: "Capstone not found" });
 
-    res.json(capstone);
+    res.json(formatResponse(capstone));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -93,7 +94,7 @@ exports.updateCapstone = async (req, res) => {
       files
     );
 
-    res.json(updatedCapstone);
+    res.json(formatResponse(updatedCapstone));
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -106,7 +107,7 @@ exports.searchCapstones = async (req, res) => {
       req.user?._id || null,
       req.user?.role || null
     );
-    res.json(capstones);
+    res.json(formatResponse(capstones));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -133,7 +134,7 @@ exports.deleteCapstone = async (req, res) => {
 
     // Delete capstone
     const deletedCapstone = await capstoneService.deleteCapstone(capstoneId);
-    res.json({ message: "Capstone deleted successfully", capstone: deletedCapstone });
+    res.json({ message: "Capstone deleted successfully", capstone: formatResponse(deletedCapstone) });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -142,7 +143,7 @@ exports.deleteCapstone = async (req, res) => {
 exports.getCapstoneStats = async (req, res) => {
   try {
     const stats = await capstoneService.getCapstoneRequestStats();
-    res.json(stats);
+    res.json(formatResponse(stats));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

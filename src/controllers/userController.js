@@ -1,4 +1,5 @@
 const userService = require("../services/userService");
+const { formatResponse } = require("../utils/responseFormatter");
 
 // Create pre-populated user (admin creates user with just email + role)
 const createPrePopulatedUser = async (req, res) => {
@@ -84,7 +85,7 @@ const updateUser = async (req, res) => {
 const getAllUsers = async (req, res) => {
   try {
     const users = await userService.getAllUsers();
-    res.json(users);
+    res.json(formatResponse(users));
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -94,7 +95,7 @@ const getUserById = async (req, res) => {
   try {
     const user = await userService.getUserById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
-    res.json(user);
+    res.json(formatResponse(user));
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -104,7 +105,7 @@ const deleteUser = async (req, res) => {
   try {
     const user = await userService.deleteUser(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
-    res.json({ message: "User deleted", user });
+    res.json({ message: "User deleted", user: formatResponse(user) });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -113,7 +114,7 @@ const deleteUser = async (req, res) => {
 const getUserStats = async (req, res) => {
   try {
     const stats = await userService.getUserStats();
-    res.json(stats);
+    res.json(formatResponse(stats));
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

@@ -1,4 +1,5 @@
 const groupService = require("../services/groupService");
+const { formatResponse } = require("../utils/responseFormatter");
 
 exports.createGroup = async (req, res) => {
   try {
@@ -12,7 +13,7 @@ exports.createGroup = async (req, res) => {
       dosen, 
       linkCVGabungan
     });
-    res.status(201).json(group);
+    res.status(201).json(formatResponse(group));
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -22,7 +23,7 @@ exports.chooseCapstone = async (req, res) => {
   try {
     const { capstoneId, alasan } = req.body;
     const relation = await groupService.chooseCapstone(req.params.id, capstoneId, alasan);
-    res.json({ message: "Capstone chosen", relation });
+    res.json({ message: "Capstone chosen", relation: formatResponse(relation) });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -36,7 +37,7 @@ exports.getGroupDetail = async (req, res) => {
     const detail = await groupService.getGroupDetail(req.params.id);
     
     // Cek akses: hanya anggota group, admin, atau dosen yang bisa lihat
-    const isAnggota = detail.anggota.some(a => a._id.toString() === userId);
+    const isAnggota = detail.anggota.some(a => a.id.toString() === userId);
     const isAdmin = userRole === "admin";
     const isDosen = userRole === "dosen";
     
@@ -44,7 +45,7 @@ exports.getGroupDetail = async (req, res) => {
       return res.status(403).json({ message: "Anda tidak memiliki akses ke grup ini" });
     }
     
-    res.json(detail);
+    res.json(formatResponse(detail));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -53,7 +54,7 @@ exports.getGroupDetail = async (req, res) => {
 exports.updateGroup = async (req, res) => {
   try {
     const group = await groupService.updateGroup(req.params.id, req.body);
-    res.json({ message: "Group updated successfully", group });
+    res.json({ message: "Group updated successfully", group: formatResponse(group) });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -62,7 +63,7 @@ exports.updateGroup = async (req, res) => {
 exports.deleteGroup = async (req, res) => {
   try {
     const group = await groupService.deleteGroup(req.params.id);
-    res.json({ message: "Group deleted", group });
+    res.json({ message: "Group deleted", group: formatResponse(group) });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -83,7 +84,7 @@ exports.uploadCV = async (req, res) => {
     const group = await groupService.uploadCV(req.params.id, req.user.id, linkCVGabungan);
     res.json({ 
       message: "CV gabungan uploaded successfully", 
-      group 
+      group: formatResponse(group)
     });
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -96,7 +97,7 @@ exports.reportIssue = async (req, res) => {
     const group = await groupService.reportIssue(req.params.id, req.user.id, description);
     res.json({ 
       message: "Issue reported successfully", 
-      group 
+      group: formatResponse(group)
     });
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -117,7 +118,7 @@ exports.resolveReportedIssue = async (req, res) => {
     const group = await groupService.resolveReportedIssue(req.params.id);
     res.json({ 
       message: "Issue resolved successfully", 
-      group 
+      group: formatResponse(group)
     });
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -127,10 +128,13 @@ exports.resolveReportedIssue = async (req, res) => {
 exports.getMyRequests = async (req, res) => {
   try {
     const result = await groupService.getMyRequests(req.user.id);
-    res.json({
+    const formatted = {
       message: "Your capstone requests",
-      ...result
-    });
+      group: formatResponse(result.group),
+      requests: formatResponse(result.requests),
+      count: result.count
+    };
+    res.json(formatted);
   } catch (err) {
     if (err.message === "You are not part of any group yet") {
       return res.status(404).json({ message: err.message });

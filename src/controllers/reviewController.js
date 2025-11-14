@@ -1,5 +1,6 @@
 const reviewService = require("../services/reviewService");
 const requestCleanupService = require("../services/requestCleanupService");
+const { formatResponse } = require("../utils/responseFormatter");
 
 exports.reviewGroup = async (req, res) => {
   try {
@@ -10,7 +11,7 @@ exports.reviewGroup = async (req, res) => {
     );
     res.json({ 
       message: `Group ${req.body.status.toLowerCase()}`,
-      group 
+      group: formatResponse(group) 
     });
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -23,7 +24,7 @@ exports.getMyRequests = async (req, res) => {
     
     res.json({
       message: "All capstone requests for your projects",
-      requests,
+      requests: formatResponse(requests),
       count: requests.length
     });
   } catch (err) {
