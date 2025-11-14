@@ -70,15 +70,6 @@ exports.register = async ({ email, password}) => {
     isClaimed: true
   };
 
-  // Tambahkan name jika provided (optional)
-  if (name) userData.name = name;
-
-  // Tambahkan nim dan prodi jika mahasiswa atau alumni dan provided
-  if (["mahasiswa", "alumni"].includes(role)) {
-    if (nim) userData.nim = nim;
-    if (prodi) userData.prodi = prodi;
-  }
-
   const user = new User(userData);
   await user.save();
 
@@ -140,6 +131,10 @@ exports.login = async ({ email, password }) => {
   // Jika user belum claimed (pre-created by admin tanpa password)
   if (!user.password || !user.isClaimed) {
     throw new Error("Akun belum diaktifkan. Silakan register terlebih dahulu untuk mengaktifkan akun.");
+  }
+
+  if (!user.isVerified) {
+    throw new Error("Akun belum terverifikasi. Silakan verifikasi email Anda.");
   }
 
   const match = await bcrypt.compare(password, user.password);
