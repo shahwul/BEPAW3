@@ -12,14 +12,6 @@ exports.register = async ({ email, password}) => {
     throw new Error("Registrasi hanya diperbolehkan untuk email dengan domain @mail.ugm.ac.id atau @ugm.ac.id");
   }
 
-  // Validasi NIM jika ada
-  if (nim) {
-    const existingNim = await User.findOne({ nim });
-    if (existingNim) {
-      throw new Error("NIM sudah digunakan");
-    }
-  }
-
   // Cek apakah user sudah ada (pre-created by admin atau sudah register)
   let existing = await User.findOne({ email });
   
@@ -33,16 +25,8 @@ exports.register = async ({ email, password}) => {
     if (!existing.password || !existing.isClaimed) {
       const hashed = await bcrypt.hash(password, 10);
       
-      // Update name jika provided (optional)
-      if (name) existing.name = name;
       existing.password = hashed; // Set password
       existing.isClaimed = true; // Mark as claimed
-      
-      // Update nim dan prodi jika mahasiswa atau alumni dan provided
-      if (["mahasiswa", "alumni"].includes(existing.role)) {
-        if (nim) existing.nim = nim;
-        if (prodi) existing.prodi = prodi;
-      }
       
       // Generate OTP
       existing.otp = otpService.generateOTP();
