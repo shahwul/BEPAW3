@@ -28,8 +28,8 @@ exports.createCapstone = async (req, res) => {
 exports.getAllCapstones = async (req, res) => {
   try {
     const capstones = await capstoneService.getAllCapstones(
-      req.user._id,
-      req.user.role
+      req.user?._id || null,
+      req.user?.role || null
     );
     res.json(capstones);
   } catch (err) {
@@ -41,8 +41,8 @@ exports.getCapstoneDetail = async (req, res) => {
   try {
     const capstone = await capstoneService.getCapstoneDetail(
       req.params.id,
-      req.user._id,
-      req.user.role
+      req.user?._id || null,
+      req.user?.role || null
     );
     if (!capstone) return res.status(404).json({ message: "Capstone not found" });
 
@@ -103,8 +103,8 @@ exports.searchCapstones = async (req, res) => {
   try {
     const capstones = await capstoneService.searchCapstones(
       req.query,
-      req.user._id,
-      req.user.role
+      req.user?._id || null,
+      req.user?.role || null
     );
     res.json(capstones);
   } catch (err) {
