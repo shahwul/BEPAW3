@@ -83,6 +83,31 @@ exports.register = async ({ email, password}) => {
   return { email, needVerification: true };
 };
 
+exports.resendOTP = async ({ email }) => {
+  const user = await User.findOne({ email });
+  if (!user) throw new Error("User tidak ditemukan");
+
+  if (user.isVerified) throw new Error("Akun sudah terverifikasi");
+
+  // Cek apakah OTP sebelumnya masih valid
+  if (user.otpExpiry && new Date() < user.otpExpiry) {
+    throw new Error("Kode OTP sebelumnya masih valid. Silakan cek email Anda.");
+  }
+
+  // Generate OTP baru
+  user.otp = otpService.generateOTP();
+  user.otpExpiry = otpService.generateOTPExpiry();
+  await user.save();
+
+  // Kirim email OTP
+  const emailResult = await otpService.sendOTPEmail(email, user.otp, "verification");
+  if (!emailResult.success) {
+    throw new Error("Gagal mengirim email OTP");
+  }
+
+  return { email, needVerification: true };
+};
+
 exports.verifyOTP = async ({ email, otp }) => {
   const user = await User.findOne({ email });
   if (!user) throw new Error("User tidak ditemukan");

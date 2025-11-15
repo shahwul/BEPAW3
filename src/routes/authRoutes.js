@@ -1,6 +1,7 @@
 const express = require("express");
 const { 
-  register, 
+  register,
+  resendOTP, 
   verifyOTP, 
   login,
   logout 
@@ -11,6 +12,7 @@ const router = express.Router();
 
 // OTP-based authentication
 router.post("/register", register);
+router.post("/resend-otp", resendOTP);
 router.post("/verify-otp", verifyOTP);
 router.post("/login", login);
 router.post("/logout", auth, logout);

@@ -43,4 +43,27 @@ exports.triggerAutoReject = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+  };
+
+  exports.submitReview = async (req, res) => {
+    try {
+      const { groupId, status } = req.body;
+    
+      if (!groupId) {
+        return res.status(400).json({ message: "groupId is required" });
+      }
+    
+      const group = await reviewService.submitReview(
+        req.user.id,
+        groupId,
+        status
+      );
+    
+      res.json({ 
+        message: `Group ${status.toLowerCase()}`,
+        group: formatResponse(group) 
+      });
+    } catch (err) {
+      res.status(400).json({ message: err.message });
+    }
 };

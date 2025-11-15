@@ -11,14 +11,14 @@ router.post("/", auth, role(["admin"]), groupController.createGroup);
 router.put("/:id", auth, role(["admin"]), groupController.updateGroup);
 router.delete("/:id", auth, role(["admin"]), groupController.deleteGroup);
 
-// ketua bisa pilih capstone
-router.post("/:id/pilih", auth, role(["mahasiswa"]), isKetua, groupController.chooseCapstone);
+// ketua bisa pilih capstone (auto-detect group)
+router.post("/pilih-capstone", auth, role(["mahasiswa"]), groupController.chooseCapstone);
 
-// ketua bisa upload CV
-router.patch("/:id/upload-cv", auth, role(["mahasiswa"]), groupController.uploadCV);
+// ketua bisa upload CV (auto-detect group)
+router.patch("/upload-cv", auth, role(["mahasiswa"]), groupController.uploadCV);
 
-// ketua bisa report issue
-router.patch("/:id/report-issue", auth, role(["mahasiswa"]), groupController.reportIssue);
+// ketua bisa report issue (auto-detect group)
+router.patch("/report-issue", auth, role(["mahasiswa"]), groupController.reportIssue);
 
 // Admin - statistics
 router.get("/stats", auth, role(["admin"]), groupController.getGroupStats);
@@ -31,6 +31,9 @@ router.patch("/:id/resolve-issue", auth, role(["admin"]), groupController.resolv
 
 // Mahasiswa - get my group's capstone requests
 router.get("/my-requests", auth, role(["mahasiswa"]), groupController.getMyRequests);
+
+// Mahasiswa - get my group detail (auto-detect based on current user)
+router.get("/my-group", auth, role(["mahasiswa"]), groupController.getMyGroupDetail);
 
 // anggota grup + dosen bisa lihat detail
 router.get("/:id", auth, groupController.getGroupDetail);

@@ -13,6 +13,18 @@ exports.register = async (req, res) => {
   }
 };
 
+exports.resendOTP = async (req, res) => {
+  try {
+    const result = await authService.resendOTP(req.body);
+    res.json({
+      message: "OTP berhasil dikirim ulang. Cek email untuk kode OTP",
+      ...result
+    });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
 exports.verifyOTP = async (req, res) => {
   try {
     const result = await authService.verifyOTP(req.body);

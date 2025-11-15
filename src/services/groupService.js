@@ -144,6 +144,15 @@ exports.chooseCapstone = async (groupId, capstoneId, alasan) => {
   return relation;
 };
 
+exports.chooseCapstoneByUser = async (userId, capstoneId, alasan) => {
+  // Find group where user is ketua
+  const group = await Group.findOne({ ketua: userId });
+  if (!group) throw new Error("You are not a ketua of any group");
+
+  // Call the existing chooseCapstone with the found group ID
+  return exports.chooseCapstone(group._id, capstoneId, alasan);
+};
+
 exports.getGroupDetail = async (groupId) => {
   const group = await Group.findById(groupId)
     .populate("ketua", "name email")
@@ -151,6 +160,36 @@ exports.getGroupDetail = async (groupId) => {
     .populate("dosen", "name email");
 
   if (!group) throw new Error("Group not found");
+
+  const requests = await Request.find({ group: group._id })
+    .populate("capstone", "judul kategori");
+
+  const capstoneDipilih = requests.map(req => ({
+    capstone: req.capstone,
+    alasan: req.alasan,
+    status: req.status,
+    createdAt: req.createdAt
+  }));
+
+  return {
+    ...group.toObject(),
+    capstoneDipilih
+  };
+};
+
+exports.getMyGroupDetail = async (userId) => {
+  // Find group where user is ketua or anggota
+  const group = await Group.findOne({
+    $or: [
+      { ketua: userId },
+      { anggota: userId }
+    ]
+  })
+    .populate("ketua", "name email")
+    .populate("anggota", "name email")
+    .populate("dosen", "name email");
+
+  if (!group) throw new Error("You are not part of any group yet");
 
   const requests = await Request.find({ group: group._id })
     .populate("capstone", "judul kategori");
@@ -278,6 +317,15 @@ exports.uploadCV = async (groupId, userId, linkCVGabungan) => {
     .populate("dosen", "name email");
 };
 
+exports.uploadCVByUser = async (userId, linkCVGabungan) => {
+  // Find group where user is ketua
+  const group = await Group.findOne({ ketua: userId });
+  if (!group) throw new Error("You are not a ketua of any group");
+
+  // Call the existing uploadCV with the found group ID
+  return exports.uploadCV(group._id, userId, linkCVGabungan);
+};
+
 exports.reportIssue = async (groupId, userId, description) => {
   const group = await Group.findById(groupId);
   if (!group) throw new Error("Group not found");
@@ -306,6 +354,15 @@ exports.reportIssue = async (groupId, userId, description) => {
     .populate("ketua", "name email")
     .populate("anggota", "name email")
     .populate("dosen", "name email");
+};
+
+exports.reportIssueByUser = async (userId, description) => {
+  // Find group where user is ketua
+  const group = await Group.findOne({ ketua: userId });
+  if (!group) throw new Error("You are not a ketua of any group");
+
+  // Call the existing reportIssue with the found group ID
+  return exports.reportIssue(group._id, userId, description);
 };
 
 exports.getReportedGroups = async () => {

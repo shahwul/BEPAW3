@@ -131,4 +131,40 @@ exports.getRequestsForAlumni = async (alumniId) => {
     status: req.status,
     createdAt: req.createdAt
   }));
+  };
+
+  exports.submitReview = async (alumniId, groupId, status) => {
+    // Validasi status
+    if (!["Diterima", "Ditolak"].includes(status)) {
+      throw new Error("Status harus 'Diterima' atau 'Ditolak'");
+    }
+
+    // Find request berdasarkan group
+    const request = await Request.findOne({ group: groupId })
+      .populate({
+        path: "group",
+        populate: [
+          { path: "ketua", select: "name email" },
+          { path: "anggota", select: "name email" }
+        ]
+      })
+      .populate({
+        path: "capstone",
+        select: "judul kategori abstrak ketua"
+      });
+
+    if (!request) {
+      throw new Error("Request not found for this group");
+    }
+
+    if (!request.group) throw new Error("Group not found in request");
+    if (!request.capstone) throw new Error("Capstone not found in request");
+
+    // Validasi: Alumni hanya bisa review capstone milik mereka sendiri
+    if (request.capstone.ketua.toString() !== alumniId) {
+      throw new Error("You can only review applications for your own capstone");
+    }
+
+    // Call existing reviewGroup dengan request ID
+    return exports.reviewGroup(request._id, status, alumniId);
 };
