@@ -163,14 +163,10 @@ exports.getAllCapstones = async (userId, userRole) => {
     if (r.group) takenMap[r.capstone.toString()] = r.group.toObject();
   });
 
-  const pendingMap = {};
+  const pendingCountMap = {};
   pendingRequests.forEach(r => {
-    if (r.group) {
-      if (!pendingMap[r.capstone.toString()]) {
-        pendingMap[r.capstone.toString()] = [];
-      }
-      pendingMap[r.capstone.toString()].push(r.group.toObject());
-    }
+    const capstoneId = r.capstone.toString();
+    pendingCountMap[capstoneId] = (pendingCountMap[capstoneId] || 0) + 1;
   });
 
   // If no user (public access), hide proposalUrl
@@ -181,18 +177,18 @@ exports.getAllCapstones = async (userId, userRole) => {
       delete capstoneObj.proposalFileId;
       delete capstoneObj.linkProposal;
       capstoneObj.takenBy = takenMap[capstoneObj._id.toString()] || null;
-      capstoneObj.pendingGroups = pendingMap[capstoneObj._id.toString()] || [];
+      capstoneObj.pendingGroupsCount = pendingCountMap[capstoneObj._id.toString()] || 0;
       return capstoneObj;
     });
   }
 
   // If admin, return all data including proposalUrl
   if (userRole === "admin") {
-    // For admin include who took the capstone and pending groups
+    // For admin include who took the capstone and pending groups count
     return capstones.map(cap => {
       const obj = cap.toObject();
       obj.takenBy = takenMap[obj._id.toString()] || null;
-      obj.pendingGroups = pendingMap[obj._id.toString()] || [];
+      obj.pendingGroupsCount = pendingCountMap[obj._id.toString()] || 0;
       return obj;
     });
   }
@@ -228,7 +224,7 @@ exports.getAllCapstones = async (userId, userRole) => {
     }
 
     capstoneObj.takenBy = takenMap[capstoneObj._id.toString()] || null;
-    capstoneObj.pendingGroups = pendingMap[capstoneObj._id.toString()] || [];
+    capstoneObj.pendingGroupsCount = pendingCountMap[capstoneObj._id.toString()] || 0;
     
     return capstoneObj;
   });
@@ -314,7 +310,7 @@ exports.getCapstoneDetail = async (id, userId, userRole) => {
   });
 
   capstoneObj.takenBy = approvedRequestWithGroup && approvedRequestWithGroup.group ? approvedRequestWithGroup.group.toObject() : null;
-  capstoneObj.pendingGroups = pendingRequestsForCapstone.map(r => r.group.toObject()).filter(g => g !== null);
+  capstoneObj.pendingGroupsCount = pendingRequestsForCapstone.length;
 
   return capstoneObj;
 };
@@ -549,14 +545,10 @@ exports.searchCapstones = async (query, userId, userRole) => {
       if (r.group) takenMap[r.capstone.toString()] = r.group.toObject();
     });
 
-    const pendingMap = {};
+    const pendingCountMap = {};
     pendingRequests.forEach(r => {
-      if (r.group) {
-        if (!pendingMap[r.capstone.toString()]) {
-          pendingMap[r.capstone.toString()] = [];
-        }
-        pendingMap[r.capstone.toString()].push(r.group.toObject());
-      }
+      const capstoneId = r.capstone.toString();
+      pendingCountMap[capstoneId] = (pendingCountMap[capstoneId] || 0) + 1;
     });
 
     // If no user (public access), hide proposalUrl
@@ -567,7 +559,7 @@ exports.searchCapstones = async (query, userId, userRole) => {
         delete capstoneObj.proposalFileId;
         delete capstoneObj.linkProposal;
         capstoneObj.takenBy = takenMap[capstoneObj._id.toString()] || null;
-        capstoneObj.pendingGroups = pendingMap[capstoneObj._id.toString()] || [];
+        capstoneObj.pendingGroupsCount = pendingCountMap[capstoneObj._id.toString()] || 0;
         return capstoneObj;
       });
     }
@@ -577,7 +569,7 @@ exports.searchCapstones = async (query, userId, userRole) => {
       return capstones.map(cap => {
         const obj = cap.toObject();
         obj.takenBy = takenMap[obj._id.toString()] || null;
-        obj.pendingGroups = pendingMap[obj._id.toString()] || [];
+        obj.pendingGroupsCount = pendingCountMap[obj._id.toString()] || 0;
         return obj;
       });
     }
@@ -611,7 +603,7 @@ exports.searchCapstones = async (query, userId, userRole) => {
       }
 
       capstoneObj.takenBy = takenMap[capstoneObj._id.toString()] || null;
-      capstoneObj.pendingGroups = pendingMap[capstoneObj._id.toString()] || [];
+      capstoneObj.pendingGroupsCount = pendingCountMap[capstoneObj._id.toString()] || 0;
         
       return capstoneObj;
     });
