@@ -1,87 +1,92 @@
-### 7. Upload CV Gabungan
+# 📚 API Endpoints Documentation
 
-**PATCH** `/api/groups/upload-cv`
+Base URL: `http://localhost:5000/api`
 
-Ketua group upload link CV Gabungan (FE-friendly endpoint — no `:id` in URL).
+## 📋 Table of Contents
 
-**Headers:**
-```
-Authorization: Bearer {token}
-### 8. Report Issue
-
-**PATCH** `/api/groups/report-issue`
-
-Ketua group report bahwa ada data yang salah di tim mereka (FE-friendly endpoint — no `:id` in URL).
-
-**Headers:**
-```
-Authorization: Bearer {token}
-Content-Type: application/json
-```
-
-**Required Role:** `mahasiswa` (harus ketua group)
-
-**Request Body:**
-```json
-{
-  "description": "Data anggota ada yang salah, NIM tidak sesuai"
-}
-```
-
-**Response Success (200):**
-```json
-{
-  "message": "Issue reported successfully",
-  "group": {
-    "_id": "676...",
-    "tema": "Healthcare Technology",
-    "namaTim": "Team Alpha",
-    "ketua": {
-      "_id": "673abc...",
-      "name": "Student Lead",
-      "email": "student@mail.ugm.ac.id"
-    },
-    "anggota": [...],
-    "dosen": {...},
-    "reportIssue": {
-      "hasIssue": true,
-      "description": "Data anggota ada yang salah, NIM tidak sesuai",
-      "reportedAt": "2025-11-13T10:30:00.000Z"
-    }
-  }
-}
-```
-
-**Response Error (400):**
-```json
-{
-  "message": "Issue description is required"
-}
-```
-
-**Response Error (403):**
-```json
-{
-  "message": "Only ketua can report issues"
-}
-```
-
-**Response Error (404):**
-```json
-{
-  "message": "Group not found"
-}
-```
-
-**Notes:**
-- Hanya ketua group yang bisa report issue
-- `description` wajib diisi dan tidak boleh kosong
-- Report akan disimpan dengan timestamp
-- Ketua yang report bisa dilihat dari field `ketua` di group (tidak perlu field `reportedBy` terpisah)
-- Admin bisa melihat group mana saja yang sudah report issue
-- Bisa di-update berkali-kali jika ada issue baru atau update
+- [Endpoint Overview](#-endpoint-overview)
+- [Authentication](#-authentication)
+- [Users](#-users)
+- [Capstones](#-capstones)
+- [Groups](#-groups)
+- [Reviews](#-reviews)
+- [Notifications](#-notifications)
 
 ---
+
+## 📊 Endpoint Overview
+
+### 🔐 Authentication (`/api/auth`)
+
+| Method | Endpoint | Auth Required | Role | Description |
+|--------|----------|---------------|------|-------------|
+| POST | `/register` | ❌ | - | Register user baru dengan OTP |
+| POST | `/verify-otp` | ❌ | - | Verify OTP setelah register |
+| POST | `/login` | ❌ | - | Login dengan email & password |
+| POST | `/logout` | ✅ | All | Logout user |
+
+### 👥 Users (`/api/users`)
+
+| Method | Endpoint | Auth Required | Role | Description |
+|--------|----------|---------------|------|-------------|
+| POST | `/` | ✅ | admin | Create pre-populated user |
+| POST | `/bulk` | ✅ | admin | Bulk create pre-populated users |
+| GET | `/stats` | ✅ | admin | Get user statistics |
+| GET | `/` | ✅ | admin, dosen | Get all users |
+| GET | `/:id` | ✅ | admin, dosen | Get user by ID |
+| PATCH | `/:id` | ✅ | admin | Update user (role, name, email, nim, prodi, etc) |
+| DELETE | `/:id` | ✅ | admin | Delete user |
+
+### 📚 Capstones (`/api/capstones`)
+
+| Method | Endpoint | Auth Required | Role | Description |
+|--------|----------|---------------|------|-------------|
+| POST | `/` | ✅ | admin | Create new capstone |
+| GET | `/stats` | ✅ | admin | Get capstone request statistics |
+| GET | `/search` | ⚠️ Optional | All | Search capstones (filter & sort) |
+| GET | `/` | ⚠️ Optional | All | Get all capstones |
+| GET | `/:id` | ⚠️ Optional | All | Get capstone detail (access control for proposalUrl) |
+| PUT | `/:id` | ✅ | admin | Update capstone |
+| DELETE | `/:id` | ✅ | admin | Delete capstone |
+
+### 👨‍👩‍👦 Groups (`/api/groups`)
+
+| Method | Endpoint | Auth Required | Role | Description |
+|--------|----------|---------------|------|-------------|
+| POST | `/` | ✅ | admin | Create new group |
+| GET | `/stats` | ✅ | admin | Get group statistics |
+| GET | `/reported` | ✅ | admin | Get groups with reported issues |
+| PATCH | `/:id/resolve-issue` | ✅ | admin | Mark reported issue as resolved |
+| GET | `/:id` | ✅ | All | Get group detail |
+| PUT | `/:id` | ✅ | admin | Update group |
+| DELETE | `/:id` | ✅ | admin | Delete group |
+| POST | `/pilih-capstone` | ✅ | mahasiswa (ketua) | Ketua pilih capstone untuk group |
+| PATCH | `/upload-cv` | ✅ | mahasiswa (ketua) | Ketua upload CV gabungan |
+| PATCH | `/report-issue` | ✅ | mahasiswa (ketua) | Ketua report data salah di tim |
+| GET | `/my-requests` | ✅ | mahasiswa | Get my group's capstone requests |
+
+### 📝 Reviews (`/api/reviews`)
+
+| Method | Endpoint | Auth Required | Role | Description |
+|--------|----------|---------------|------|-------------|
+| GET | `/inbox` | ✅ | alumni | Get all capstone requests for alumni's capstones |
+| POST | `/submit` | ✅ | alumni | Alumni review group proposal |
+| POST | `/auto-reject` | ✅ | admin | Manual trigger auto-reject expired requests (>3 hari) |
+| POST | `/cron/auto-reject` | ✅ API Key | - | Cron job endpoint (external service) |
+
+### 🔔 Notifications (`/api/notifications`)
+
+| Method | Endpoint | Auth Required | Role | Description |
+|--------|----------|---------------|------|-------------|
+| POST | `/` | ✅ | All | Create notification |
+| GET | `/` | ✅ | All | Get user's notifications |
+| PATCH | `/:id/read` | ✅ | All | Mark notification as read |
+
+---
+
+## 🔐 Authentication
+
+Base Path: `/api/auth`
 
 ### 1. Register
 
@@ -132,7 +137,7 @@ Content-Type: application/json
 
 **POST** `/api/auth/resend-otp`
 
-Resend OTP ke email untuk verifikasi.
+Resend OTP ke email user.
 
 **Headers:**
 ```
@@ -142,7 +147,7 @@ Content-Type: application/json
 **Request Body:**
 ```json
 {
-  "email": "student@mail.ugm.ac.id"
+  "email": "user@mail.ugm.ac.id"
 }
 ```
 
@@ -160,9 +165,6 @@ Content-Type: application/json
 }
 ```
 
-**Notes:**
-- OTP baru dikirim ke email dan berlaku 5 menit
-- Hanya untuk user yang belum verified
 ---
 
 ### 3. Verify OTP
@@ -1587,7 +1589,7 @@ Content-Type: application/json
 
 **POST** `/api/groups/pilih-capstone`
 
-Ketua group memilih capstone untuk tim (FE-friendly endpoint — no `:id` in URL).
+Ketua group memilih capstone untuk tim.
 
 **Headers:**
 ```
@@ -1974,13 +1976,9 @@ Authorization: Bearer {token}
 
 ### 2. Review Group
 
-**POST** `/api/reviews/:id`  (by Request ID)
+**POST** `/api/reviews/submit`
 
-or
-
-**POST** `/api/reviews/submit`  (FE-friendly: submit review by `groupId`)
-
-Alumni approve/reject group request. The API supports both reviewing by Request ID (existing flow) and a newer FE-friendly flow where alumni submit using the group's `groupId`.
+Alumni approve/reject group request.
 
 **Headers:**
 ```
@@ -1990,26 +1988,12 @@ Content-Type: application/json
 
 **Required Role:** `alumni`
 
-**For** `POST /api/reviews/:id` **(existing):**
-
-**URL Parameters:**
-- `id` - Request ID (bukan Group ID)
-
 **Request Body:**
 ```json
 {
+  "requestId": "673abc123",
   "status": "Diterima"
   // or "Ditolak"
-}
-```
-
-**For** `POST /api/reviews/submit` **(FE-friendly):**
-
-**Request Body:**
-```json
-{
-  "groupId": "676...",
-  "status": "Diterima"
 }
 ```
 
