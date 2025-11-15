@@ -505,6 +505,7 @@ exports.getMyRequests = async (userId) => {
 
   // Map requests dengan access control untuk proposalUrl
   const requestsWithAccess = requests.map(req => {
+    const reqObj = req.toObject ? req.toObject() : req;
     const capstoneObj = req.capstone ? req.capstone.toObject() : null;
     
     if (capstoneObj) {
@@ -516,11 +517,11 @@ exports.getMyRequests = async (userId) => {
     }
     
     return {
-      requestId: req._id,
+      requestId: reqObj._id.toString(),
       capstone: capstoneObj,
-      alasan: req.alasan,
-      status: req.status,
-      createdAt: req.createdAt
+      alasan: reqObj.alasan,
+      status: reqObj.status,
+      createdAt: reqObj.createdAt
     };
   });
 

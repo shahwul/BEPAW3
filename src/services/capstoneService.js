@@ -131,6 +131,48 @@ exports.getAllCapstones = async (userId, userRole) => {
     .populate("anggota", "name email")
     .populate("dosen", "name email");
 
+  // Find approved requests to determine which group has taken each capstone
+  const capstoneIds = capstones.map(c => c._id);
+  const approvedRequests = await Request.find({
+    capstone: { $in: capstoneIds },
+    status: "Diterima"
+  }).populate({
+    path: "group",
+    select: "namaTim ketua anggota",
+    populate: [
+      { path: "ketua", select: "name email nim prodi" },
+      { path: "anggota", select: "name email nim prodi" }
+    ]
+  });
+
+  // Find pending requests (groups interested in the capstone)
+  const pendingRequests = await Request.find({
+    capstone: { $in: capstoneIds },
+    status: "Menunggu Review"
+  }).populate({
+    path: "group",
+    select: "namaTim ketua anggota",
+    populate: [
+      { path: "ketua", select: "name email nim prodi" },
+      { path: "anggota", select: "name email nim prodi" }
+    ]
+  });
+
+  const takenMap = {};
+  approvedRequests.forEach(r => {
+    if (r.group) takenMap[r.capstone.toString()] = r.group.toObject();
+  });
+
+  const pendingMap = {};
+  pendingRequests.forEach(r => {
+    if (r.group) {
+      if (!pendingMap[r.capstone.toString()]) {
+        pendingMap[r.capstone.toString()] = [];
+      }
+      pendingMap[r.capstone.toString()].push(r.group.toObject());
+    }
+  });
+
   // If no user (public access), hide proposalUrl
   if (!userId || !userRole) {
     return capstones.map(capstone => {
@@ -138,13 +180,21 @@ exports.getAllCapstones = async (userId, userRole) => {
       delete capstoneObj.proposalUrl;
       delete capstoneObj.proposalFileId;
       delete capstoneObj.linkProposal;
+      capstoneObj.takenBy = takenMap[capstoneObj._id.toString()] || null;
+      capstoneObj.pendingGroups = pendingMap[capstoneObj._id.toString()] || [];
       return capstoneObj;
     });
   }
 
   // If admin, return all data including proposalUrl
   if (userRole === "admin") {
-    return capstones;
+    // For admin include who took the capstone and pending groups
+    return capstones.map(cap => {
+      const obj = cap.toObject();
+      obj.takenBy = takenMap[obj._id.toString()] || null;
+      obj.pendingGroups = pendingMap[obj._id.toString()] || [];
+      return obj;
+    });
   }
 
   // For non-admin users, check which capstones they have access to
@@ -158,12 +208,12 @@ exports.getAllCapstones = async (userId, userRole) => {
 
   const userGroupIds = userGroups.map(g => g._id);
 
-  const approvedRequests = await Request.find({
+  const userGroupApprovedRequests = await Request.find({
     group: { $in: userGroupIds },
     status: "Diterima"
   }).select('capstone');
 
-  const accessibleCapstoneIds = approvedRequests.map(r => r.capstone.toString());
+  const accessibleCapstoneIds = userGroupApprovedRequests.map(r => r.capstone.toString());
 
   // Filter out proposalUrl for capstones user doesn't have access to
   const capstonesWithAccess = capstones.map(capstone => {
@@ -176,6 +226,9 @@ exports.getAllCapstones = async (userId, userRole) => {
       delete capstoneObj.proposalFileId;
       delete capstoneObj.linkProposal; // backward compatibility
     }
+
+    capstoneObj.takenBy = takenMap[capstoneObj._id.toString()] || null;
+    capstoneObj.pendingGroups = pendingMap[capstoneObj._id.toString()] || [];
     
     return capstoneObj;
   });
@@ -233,6 +286,35 @@ exports.getCapstoneDetail = async (id, userId, userRole) => {
     delete capstoneObj.proposalFileId;
     delete capstoneObj.linkProposal; // backward compatibility
   }
+
+  // Attach information about which group took this capstone (if any)
+  const approvedRequestWithGroup = await Request.findOne({
+    capstone: id,
+    status: "Diterima"
+  }).populate({
+    path: "group",
+    select: "namaTim ketua anggota",
+    populate: [
+      { path: "ketua", select: "name email nim prodi" },
+      { path: "anggota", select: "name email nim prodi" }
+    ]
+  });
+
+  // Attach pending groups (interested groups)
+  const pendingRequestsForCapstone = await Request.find({
+    capstone: id,
+    status: "Menunggu Review"
+  }).populate({
+    path: "group",
+    select: "namaTim ketua anggota",
+    populate: [
+      { path: "ketua", select: "name email nim prodi" },
+      { path: "anggota", select: "name email nim prodi" }
+    ]
+  });
+
+  capstoneObj.takenBy = approvedRequestWithGroup && approvedRequestWithGroup.group ? approvedRequestWithGroup.group.toObject() : null;
+  capstoneObj.pendingGroups = pendingRequestsForCapstone.map(r => r.group.toObject()).filter(g => g !== null);
 
   return capstoneObj;
 };
@@ -435,20 +517,69 @@ exports.searchCapstones = async (query, userId, userRole) => {
       .populate("anggota", "name email")
       .populate("dosen", "name email");
 
+    // Determine which capstones have been taken by a group (approved requests)
+    const capstoneIds = capstones.map(c => c._id);
+    const approvedRequests = await Request.find({
+      capstone: { $in: capstoneIds },
+      status: "Diterima"
+    }).populate({
+      path: "group",
+      select: "namaTim ketua anggota",
+      populate: [
+        { path: "ketua", select: "name email nim prodi" },
+        { path: "anggota", select: "name email nim prodi" }
+      ]
+    });
+
+    // Find pending requests (groups interested in the capstone)
+    const pendingRequests = await Request.find({
+      capstone: { $in: capstoneIds },
+      status: "Menunggu Review"
+    }).populate({
+      path: "group",
+      select: "namaTim ketua anggota",
+      populate: [
+        { path: "ketua", select: "name email nim prodi" },
+        { path: "anggota", select: "name email nim prodi" }
+      ]
+    });
+
+    const takenMap = {};
+    approvedRequests.forEach(r => {
+      if (r.group) takenMap[r.capstone.toString()] = r.group.toObject();
+    });
+
+    const pendingMap = {};
+    pendingRequests.forEach(r => {
+      if (r.group) {
+        if (!pendingMap[r.capstone.toString()]) {
+          pendingMap[r.capstone.toString()] = [];
+        }
+        pendingMap[r.capstone.toString()].push(r.group.toObject());
+      }
+    });
+
     // If no user (public access), hide proposalUrl
     if (!userId || !userRole) {
-        return capstones.map(capstone => {
-            const capstoneObj = capstone.toObject();
-            delete capstoneObj.proposalUrl;
-            delete capstoneObj.proposalFileId;
-            delete capstoneObj.linkProposal;
-            return capstoneObj;
-        });
+      return capstones.map(capstone => {
+        const capstoneObj = capstone.toObject();
+        delete capstoneObj.proposalUrl;
+        delete capstoneObj.proposalFileId;
+        delete capstoneObj.linkProposal;
+        capstoneObj.takenBy = takenMap[capstoneObj._id.toString()] || null;
+        capstoneObj.pendingGroups = pendingMap[capstoneObj._id.toString()] || [];
+        return capstoneObj;
+      });
     }
 
     // If admin, return all data including linkProposal
     if (userRole === "admin") {
-        return capstones;
+      return capstones.map(cap => {
+        const obj = cap.toObject();
+        obj.takenBy = takenMap[obj._id.toString()] || null;
+        obj.pendingGroups = pendingMap[obj._id.toString()] || [];
+        return obj;
+      });
     }
 
     // For non-admin users, check which capstones they have access to
@@ -459,27 +590,30 @@ exports.searchCapstones = async (query, userId, userRole) => {
 
     const userGroupIds = userGroups.map(g => g._id);
 
-    const approvedRequests = await Request.find({
-        group: { $in: userGroupIds },
-        status: "Diterima"
+    const userGroupApprovedRequests = await Request.find({
+      group: { $in: userGroupIds },
+      status: "Diterima"
     }).select('capstone');
 
-    const accessibleCapstoneIds = approvedRequests.map(r => r.capstone.toString());
+    const accessibleCapstoneIds = userGroupApprovedRequests.map(r => r.capstone.toString());
 
     // Filter out proposalUrl for capstones user doesn't have access to
     const capstonesWithAccess = capstones.map(capstone => {
-        const capstoneObj = capstone.toObject();
+      const capstoneObj = capstone.toObject();
         
-        // Check if user has access to this capstone's proposal
-        const hasAccess = accessibleCapstoneIds.includes(capstoneObj._id.toString());
+      // Check if user has access to this capstone's proposal
+      const hasAccess = accessibleCapstoneIds.includes(capstoneObj._id.toString());
         
-        if (!hasAccess) {
-            delete capstoneObj.proposalUrl;
-            delete capstoneObj.proposalFileId;
-            delete capstoneObj.linkProposal; // backward compatibility
-        }
+      if (!hasAccess) {
+        delete capstoneObj.proposalUrl;
+        delete capstoneObj.proposalFileId;
+        delete capstoneObj.linkProposal; // backward compatibility
+      }
+
+      capstoneObj.takenBy = takenMap[capstoneObj._id.toString()] || null;
+      capstoneObj.pendingGroups = pendingMap[capstoneObj._id.toString()] || [];
         
-        return capstoneObj;
+      return capstoneObj;
     });
 
     return capstonesWithAccess;
