@@ -21,6 +21,7 @@ Base URL: `http://localhost:5000/api`
 | Method | Endpoint | Auth Required | Role | Description |
 |--------|----------|---------------|------|-------------|
 | POST | `/register` | ❌ | - | Register user baru dengan OTP |
+| POST | `/resend-otp` | ❌ | - | Resend OTP ke email user |
 | POST | `/verify-otp` | ❌ | - | Verify OTP setelah register |
 | POST | `/login` | ❌ | - | Login dengan email & password |
 | POST | `/logout` | ✅ | All | Logout user |
@@ -57,7 +58,7 @@ Base URL: `http://localhost:5000/api`
 | GET | `/stats` | ✅ | admin | Get group statistics |
 | GET | `/reported` | ✅ | admin | Get groups with reported issues |
 | PATCH | `/:id/resolve-issue` | ✅ | admin | Mark reported issue as resolved |
-| GET | `/:id` | ✅ | All | Get group detail |
+| GET | `/my-group` | ✅ | All | Get group detail |
 | PUT | `/:id` | ✅ | admin | Update group |
 | DELETE | `/:id` | ✅ | admin | Delete group |
 | POST | `/pilih-capstone` | ✅ | mahasiswa (ketua) | Ketua pilih capstone untuk group |
