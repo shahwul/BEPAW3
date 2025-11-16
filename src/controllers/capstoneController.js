@@ -1,4 +1,4 @@
-// Get capstones where user is ketua or anggota (for alumni)
+// Get single capstone where user is ketua or anggota (for alumni)
 exports.getMyCapstones = async (req, res) => {
   try {
     const userId = req.user._id || req.user.id;
@@ -7,7 +7,14 @@ exports.getMyCapstones = async (req, res) => {
       return res.status(403).json({ message: "Only alumni can access their capstones" });
     }
     const capstones = await require("../services/capstoneService").getCapstonesByUser(userId);
-    res.json(require("../utils/responseFormatter").formatResponse(capstones));
+    if (!capstones || capstones.length === 0) {
+      return res.status(404).json({ message: "No capstone found for this user" });
+    }
+    // Ambil capstone pertama (atau bisa pilih logika lain sesuai kebutuhan)
+    let myCapstone = capstones[0].toObject();
+    // nim sudah otomatis ada di ketua dan anggota jika di model dan populate
+    // nip juga otomatis ada di dosen jika di model dan populate
+    res.json(require("../utils/responseFormatter").formatResponse(myCapstone));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
