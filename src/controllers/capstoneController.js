@@ -1,3 +1,17 @@
+// Get capstones where user is ketua or anggota (for alumni)
+exports.getMyCapstones = async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.id;
+    const role = req.user.role;
+    if (role !== "alumni") {
+      return res.status(403).json({ message: "Only alumni can access their capstones" });
+    }
+    const capstones = await require("../services/capstoneService").getCapstonesByUser(userId);
+    res.json(require("../utils/responseFormatter").formatResponse(capstones));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 const capstoneService = require("../services/capstoneService");
 const { formatResponse } = require("../utils/responseFormatter");
 

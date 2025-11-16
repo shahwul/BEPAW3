@@ -1,3 +1,16 @@
+// Get capstones where user is ketua or anggota
+exports.getCapstonesByUser = async (userId) => {
+  const Capstone = require("../models/capstone");
+  return Capstone.find({
+    $or: [
+      { ketua: userId },
+      { anggota: userId }
+    ]
+  })
+    .populate("ketua", "name email")
+    .populate("anggota", "name email")
+    .populate("dosen", "name email");
+};
 const Capstone = require("../models/capstone");
 const User = require("../models/user");
 const cloudinaryService = require("./cloudinaryService");
