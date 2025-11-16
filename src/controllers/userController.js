@@ -120,11 +120,13 @@ const getUserStats = async (req, res) => {
   }
 };
 
-// Get current user info (name & email)
+// Get current user info (name, email, role, nim, prodi) from DB
 const getMe = async (req, res) => {
   try {
-    // req.user sudah diisi oleh middleware auth
-    const { name, email, role, nim, prodi } = req.user;
+    const user = await userService.getUserById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    // Hide password field if any
+    const { name, email, role, nim, prodi } = user;
     res.json({ name, email, role, nim, prodi });
   } catch (err) {
     res.status(500).json({ message: err.message });
