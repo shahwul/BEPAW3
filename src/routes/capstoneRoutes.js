@@ -47,6 +47,7 @@ router.post("/", auth, role(["admin"]), uploadFields, capstoneController.createC
 router.get("/stats", auth, role(["admin"]), capstoneController.getCapstoneStats); // Admin stats
 router.get("/search", optionalAuth, capstoneController.searchCapstones); // Public with optional auth
 router.get("/", optionalAuth, capstoneController.getAllCapstones); // Public with optional auth
+router.get("/my-capstone", auth, role(["alumni"]), capstoneController.getMyCapstones); // Alumni only
 router.get("/:id", optionalAuth, capstoneController.getCapstoneDetail); // Public with optional auth
 router.put("/:id", auth, role(["admin"]), uploadFields, capstoneController.updateCapstone);
 router.delete("/:id", auth, role(["admin"]), capstoneController.deleteCapstone);
