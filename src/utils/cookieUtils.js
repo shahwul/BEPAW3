@@ -4,6 +4,7 @@ const cookieOptions = {
     httpOnly: true, // Prevent XSS attacks
     secure: process.env.NODE_ENV === 'production', // HTTPS only in production
     sameSite: 'none', // CSRF protection
+    secure: true,
     maxAge: 24 * 60 * 60 * 1000, // 1 day
     path: '/'
   }),
@@ -11,7 +12,7 @@ const cookieOptions = {
   // Clear cookie options
   getClearCookieOptions: () => ({
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: true,
     sameSite: 'none',
     path: '/'
   })
