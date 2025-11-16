@@ -12,17 +12,8 @@ exports.getMyCapstones = async (req, res) => {
     }
     // Ambil capstone pertama (atau bisa pilih logika lain sesuai kebutuhan)
     let myCapstone = capstones[0].toObject();
-    // Pastikan populate nim untuk ketua dan anggota
-    if (myCapstone.ketua && myCapstone.ketua.nim) {
-      myCapstone.ketuaNim = myCapstone.ketua.nim;
-    }
-    if (Array.isArray(myCapstone.anggota)) {
-      myCapstone.anggotaNim = myCapstone.anggota.map(a => a.nim || null);
-    }
-    // Tampilkan nip dosen jika ada (nip = prodi atau field nip jika ada di model)
-    if (myCapstone.dosen) {
-      myCapstone.dosenNip = myCapstone.dosen.nip || myCapstone.dosen.prodi || null;
-    }
+    // nim sudah otomatis ada di ketua dan anggota jika di model dan populate
+    // nip juga otomatis ada di dosen jika di model dan populate
     res.json(require("../utils/responseFormatter").formatResponse(myCapstone));
   } catch (err) {
     res.status(500).json({ message: err.message });
