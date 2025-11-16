@@ -26,11 +26,21 @@ exports.getInboxRequests = async (req, res) => {
     // Format hanya field yang diperlukan
     const formatted = requests.map(req => {
       const group = req.group || {};
+      // Ambil dosen info jika populated
+      let dosen = group.dosen;
+      let dosenInfo = {};
+      if (dosen && typeof dosen === 'object') {
+        dosenInfo = {
+          id: dosen._id || dosen.id,
+          name: dosen.name,
+          nip: dosen.nip
+        };
+      }
       return {
         namaTim: group.namaTim,
         ketua: group.ketua,
         anggota: group.anggota,
-        dosen: group.dosen,
+        dosen: dosenInfo,
         alasan: req.alasan,
         linkcv: group.linkCVGabungan,
         createdAt: req.createdAt,
