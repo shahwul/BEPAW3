@@ -3,7 +3,7 @@ const cookieOptions = {
   getTokenCookieOptions: () => ({
     httpOnly: true, // Prevent XSS attacks
     secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: 'lax', // CSRF protection
+    sameSite: 'none', // CSRF protection
     maxAge: 24 * 60 * 60 * 1000, // 1 day
     path: '/'
   }),
@@ -12,7 +12,7 @@ const cookieOptions = {
   getClearCookieOptions: () => ({
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'none',
     path: '/'
   })
 };
