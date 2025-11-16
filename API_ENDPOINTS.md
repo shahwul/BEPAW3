@@ -34,6 +34,7 @@ Base URL: `http://localhost:5000/api`
 | POST | `/bulk` | ✅ | admin | Bulk create pre-populated users |
 | GET | `/stats` | ✅ | admin | Get user statistics |
 | GET | `/` | ✅ | admin, dosen | Get all users |
+| GET | `/me` | ✅ | All | Get current user info |
 | GET | `/:id` | ✅ | admin, dosen | Get user by ID |
 | PATCH | `/:id` | ✅ | admin | Update user (role, name, email, nim, prodi, etc) |
 | DELETE | `/:id` | ✅ | admin | Delete user |
@@ -486,7 +487,40 @@ Authorization: Bearer {token}
 
 ---
 
-### 4. Get User by ID
+### 4. Get Current User Info
+
+**GET** `/api/users/me`
+
+Get current logged-in user info.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Required Role:** All authenticated users
+
+**Response Success (200):**
+```json
+{
+    "name": "Syahrul Afif Tri Anggara",
+    "email": "syahrulafiftrianggara@mail.ugm.ac.id",
+    "role": "mahasiswa",
+    "nim": "23/518266/TK/57027",
+    "prodi": "Teknologi Informasi"
+}
+```
+
+**Response Error (401):**
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+---
+
+### 5. Get User by ID
 
 **GET** `/api/users/:id`
 
@@ -527,7 +561,7 @@ Authorization: Bearer {token}
 
 ---
 
-### 5. Update User
+### 6. Update User
 
 **PATCH** `/api/users/:id`
 
@@ -592,7 +626,7 @@ Content-Type: application/json
 
 ---
 
-### 6. Delete User
+### 7. Delete User
 
 **DELETE** `/api/users/:id`
 
@@ -630,7 +664,7 @@ Authorization: Bearer {admin_token}
 
 ---
 
-### 7. Get User Statistics
+### 8. Get User Statistics
 
 **GET** `/api/users/stats`
 
