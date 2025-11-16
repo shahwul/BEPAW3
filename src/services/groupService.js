@@ -110,6 +110,8 @@ exports.chooseCapstone = async (groupId, capstoneId, alasan) => {
 
   const requestId = relation._id;
 
+  console.log(`Request created with ID: ${requestId}`);
+
   // Update status capstone jika sudah ada 3 pending request
   const pendingCount = await Request.countDocuments({
     capstone: capstoneId,
@@ -124,7 +126,7 @@ exports.chooseCapstone = async (groupId, capstoneId, alasan) => {
   try {
     await notificationService.createNotification({
       userId: group.ketua,
-      requestId,
+      requestId : requestId,
       type: "notification",
       message: `Kelompok Anda telah memilih capstone dengan ID: ${capstoneId}. Silakan tinjau dan setujui.`,
       data: { groupId: group._id, capstoneId }
