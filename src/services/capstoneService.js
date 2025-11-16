@@ -7,9 +7,9 @@ exports.getCapstonesByUser = async (userId) => {
       { anggota: userId }
     ]
   })
-    .populate("ketua", "name email")
-    .populate("anggota", "name email")
-    .populate("dosen", "name email");
+    .populate("ketua", "name email nim")
+    .populate("anggota", "name email nim")
+    .populate("dosen", "name email nip");
 };
 const Capstone = require("../models/capstone");
 const User = require("../models/user");
