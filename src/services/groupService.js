@@ -4,7 +4,7 @@ const Capstone = require("../models/capstone");
 const Request = require("../models/request");
 const notificationService = require("./notificationService");
 
-exports.createGroup = async ({ tema, namaTim, tahun, ketua, anggota, dosen, linkCVGabungan, linkCVPengalaman }) => {
+exports.createGroup = async ({ tema, namaTim, tahun, ketua, anggota, dosen, linkCVGabungan}) => {
   // Validasi ketua berdasarkan ID
   const ketuaUser = await User.findById(ketua);
   if (!ketuaUser) throw new Error("Ketua user not found");
@@ -60,9 +60,9 @@ exports.createGroup = async ({ tema, namaTim, tahun, ketua, anggota, dosen, link
   
   // Populate data untuk response
   return await Group.findById(savedGroup._id)
-    .populate("ketua", "name email")
-    .populate("anggota", "name email")
-    .populate("dosen", "name email");
+    .populate("ketua", "name email nim")
+    .populate("anggota", "name email nim")
+    .populate("dosen", "name email nip");
 };
 
 exports.chooseCapstone = async (groupId, capstoneId, alasan) => {
@@ -155,9 +155,11 @@ exports.chooseCapstoneByUser = async (userId, capstoneId, alasan) => {
 
 exports.getGroupDetail = async (groupId) => {
   const group = await Group.findById(groupId)
-    .populate("ketua", "name email")
-    .populate("anggota", "name email")
-    .populate("dosen", "name email");
+    .populate("ketua", "name email nim")
+    .populate("anggota", "name email nim")
+    .populate("dosen", "name email nip");
+    // sertakan linkCVGabungan
+    
 
   if (!group) throw new Error("Group not found");
 
@@ -185,9 +187,9 @@ exports.getMyGroupDetail = async (userId) => {
       { anggota: userId }
     ]
   })
-    .populate("ketua", "name email")
-    .populate("anggota", "name email")
-    .populate("dosen", "name email");
+    .populate("ketua", "name email nim")
+    .populate("anggota", "name email nim")
+    .populate("dosen", "name email nip");
 
   if (!group) throw new Error("You are not part of any group yet");
 
@@ -280,9 +282,9 @@ exports.updateGroup = async (groupId, updateData) => {
 
   // Populate dan return
   return await Group.findById(group._id)
-    .populate("ketua", "name email")
-    .populate("anggota", "name email")
-    .populate("dosen", "name email");
+    .populate("ketua", "name email nim")
+    .populate("anggota", "name email nim")
+    .populate("dosen", "name email nip");
 };
 
 exports.deleteGroup = async (groupId) => {
@@ -351,9 +353,9 @@ exports.reportIssue = async (groupId, userId, description) => {
 
   // Populate dan return
   return await Group.findById(group._id)
-    .populate("ketua", "name email")
-    .populate("anggota", "name email")
-    .populate("dosen", "name email");
+    .populate("ketua", "name email nim")
+    .populate("anggota", "name email nim")
+    .populate("dosen", "name email nip");
 };
 
 exports.reportIssueByUser = async (userId, description) => {
