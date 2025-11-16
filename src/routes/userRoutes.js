@@ -6,7 +6,8 @@ const {
   getAllUsers, 
   getUserById, 
   deleteUser,
-  getUserStats
+  getUserStats,
+  getMe
 } = require("../controllers/userController");
 const auth = require("../middlewares/auth");
 const role = require("../middlewares/role");
@@ -26,3 +27,5 @@ router.get("/:id", auth, role(["admin", "dosen"]), getUserById);
 
 
 module.exports = router;
+// Get current user info
+router.get("/me", auth, getMe);
