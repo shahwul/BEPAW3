@@ -14,27 +14,27 @@ class NotificationService {
     });
   }
 
-  async createNotification({ userId, type, message, data }) {
-  const notification = new Notification({ userId, type, message, data });
-  await notification.save();
+  async createNotification({ userId, requestId, type, message, data }) {
+    const notification = new Notification({ userId, requestId, type, message, data });
+    await notification.save();
 
-  try {
-    const user = await User.findById(userId);
-    if (user && user.email && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-      // Generate HTML template berdasarkan type notifikasi
-      const htmlTemplate = this.generateEmailTemplate(type, message, user.name || 'User', data);
-      
-      await this.transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: user.email,
-        subject: this.getEmailSubject(type),
-        text: message, // fallback untuk email client yang tidak support HTML
-        html: htmlTemplate
-      });
-    }
-  } catch (err) {
-    console.error("Failed to send notification email:", err.message);
-    // tidak melempar lagi supaya flow utama tidak gagal
+    try {
+      const user = await User.findById(userId);
+      if (user && user.email && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        // Generate HTML template berdasarkan type notifikasi
+        const htmlTemplate = this.generateEmailTemplate(type, message, user.name || 'User', data);
+        
+        await this.transporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: user.email,
+          subject: this.getEmailSubject(type),
+          text: message, // fallback untuk email client yang tidak support HTML
+          html: htmlTemplate
+        });
+      }
+    } catch (err) {
+      console.error("Failed to send notification email:", err.message);
+      // tidak melempar lagi supaya flow utama tidak gagal
   }
 
   return notification;
