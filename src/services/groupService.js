@@ -122,7 +122,7 @@ exports.chooseCapstone = async (groupId, capstoneId, alasan) => {
   try {
     await notificationService.createNotification({
       userId: group.ketua,
-      requestId : relation._id,
+      requestId : relation._id || null,
       type: "notification",
       message: `Kelompok Anda telah memilih capstone dengan ID: ${capstoneId}. Silakan tinjau dan setujui.`,
       data: { groupId: group._id, capstoneId}
