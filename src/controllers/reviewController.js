@@ -37,6 +37,7 @@ exports.getInboxRequests = async (req, res) => {
         };
       }
       return {
+        groupId: group._id || group.id,
         namaTim: group.namaTim,
         ketua: group.ketua,
         anggota: group.anggota,
