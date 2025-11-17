@@ -1,3 +1,4 @@
+const { get } = require("mongoose");
 const userService = require("../services/userService");
 const { formatResponse } = require("../utils/responseFormatter");
 
@@ -84,7 +85,7 @@ const updateUser = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
   try {
-    const users = await userService.getAllUsers();
+    const users = await userService.getAllUsers(req.query);
     res.json(formatResponse(users));
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -137,8 +138,8 @@ module.exports = {
   createPrePopulatedUser,
   bulkCreatePrePopulatedUsers,
   updateUser, 
-  getAllUsers, 
   getUserById, 
+  getAllUsers,
   deleteUser,
   getUserStats,
   getMe

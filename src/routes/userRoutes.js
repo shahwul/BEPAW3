@@ -2,11 +2,11 @@ const express = require("express");
 const { 
   createPrePopulatedUser,
   bulkCreatePrePopulatedUsers,
-  updateUser, 
-  getAllUsers, 
+  updateUser,  
   getUserById, 
   deleteUser,
   getUserStats,
+  getAllUsers,
   getMe
 } = require("../controllers/userController");
 const auth = require("../middlewares/auth");
