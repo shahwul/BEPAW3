@@ -49,10 +49,11 @@ exports.createCapstone = async (req, res) => {
 
 exports.getAllCapstones = async (req, res) => {
   try {
-    const capstones = await capstoneService.getAllCapstones(
-      req.user?._id || null,
-      req.user?.role || null
-    );
+    const userId = req.user?.id;   // dari JWT
+    const userRole = req.user?.role;
+
+    const capstones = await capstoneService.getAllCapstones(userId, userRole);
+
     res.json(formatResponse(capstones));
   } catch (err) {
     res.status(500).json({ message: err.message });
