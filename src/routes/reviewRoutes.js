@@ -7,7 +7,7 @@ const apiKeyAuth = require("../middlewares/apiKey");
 const router = express.Router();
 
 // alumni get all requests for their capstones
-router.get("/inbox", auth, role(["alumni"]), reviewController.getMyRequests);
+router.get("/inbox", auth, role(["alumni"]), reviewController.getInboxRequests);
 
 // alumni submit review (auto-detect request by groupId)
 router.post("/submit", auth, role(["alumni"]), reviewController.submitReview);

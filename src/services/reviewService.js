@@ -116,7 +116,8 @@ exports.getRequestsForAlumni = async (alumniId) => {
       path: "group",
       populate: [
         { path: "ketua", select: "name email nim prodi" },
-        { path: "anggota", select: "name email nim prodi" }
+        { path: "anggota", select: "name email nim prodi" },
+        { path: "dosen", select: "name nip" }
       ]
     })
     .populate("capstone", "judul kategori abstrak")

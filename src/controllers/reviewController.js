@@ -18,14 +18,40 @@ exports.reviewGroup = async (req, res) => {
   }
 };
 
-exports.getMyRequests = async (req, res) => {
+
+// Endpoint inbox: hanya mengembalikan data request dengan field grup yang diperlukan saja
+exports.getInboxRequests = async (req, res) => {
   try {
     const requests = await reviewService.getRequestsForAlumni(req.user.id);
-    
+    // Format hanya field yang diperlukan
+    const formatted = requests.map(req => {
+      const group = req.group || {};
+      // Ambil dosen info jika populated
+      let dosen = group.dosen;
+      let dosenInfo = {};
+      if (dosen && typeof dosen === 'object') {
+        dosenInfo = {
+          id: dosen._id || dosen.id,
+          name: dosen.name,
+          nip: dosen.nip
+        };
+      }
+      return {
+        groupId: group._id || group.id,
+        namaTim: group.namaTim,
+        ketua: group.ketua,
+        anggota: group.anggota,
+        dosen: dosenInfo,
+        alasan: req.alasan,
+        linkcv: group.linkCVGabungan,
+        createdAt: req.createdAt,
+        status: req.status
+      };
+    });
     res.json({
-      message: "All capstone requests for your projects",
-      requests: formatResponse(requests),
-      count: requests.length
+      message: "Inbox requests",
+      requests: formatted,
+      count: formatted.length
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
