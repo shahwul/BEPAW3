@@ -6,6 +6,10 @@ const { isKetua, isAnggota } = require("../middlewares/groupAccess");
 
 const router = express.Router();
 
+
+// Ambil semua grup (admin-only, bisa diubah sesuai kebutuhan)
+router.get("/", auth, role(["admin"]), groupController.getAllGroups);
+
 // Admin only - write operations
 router.post("/", auth, role(["admin"]), groupController.createGroup);
 router.put("/:id", auth, role(["admin"]), groupController.updateGroup);

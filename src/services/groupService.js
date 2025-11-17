@@ -1,3 +1,10 @@
+// Ambil semua grup dengan data lengkap
+exports.getAllGroups = async () => {
+  return await Group.find()
+    .populate("ketua", "name email nim")
+    .populate("anggota", "name email nim")
+    .populate("dosen", "name email nip");
+};
 const Group = require("../models/group");
 const User = require("../models/user");
 const Capstone = require("../models/capstone");
