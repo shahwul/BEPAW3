@@ -1,9 +1,10 @@
 // Ambil semua grup dengan data lengkap
 exports.getAllGroups = async () => {
-  return await Group.find()
-    .populate("ketua", "name email nim")
+  const groups = await Group.find()
+    .populate("ketua", "name email nim role")
     .populate("anggota", "name email nim")
     .populate("dosen", "name email nip");
+  return groups;
 };
 const Group = require("../models/group");
 const User = require("../models/user");
