@@ -36,6 +36,15 @@ exports.getInboxRequests = async (req, res) => {
           nip: dosen.nip
         };
       }
+      // Hitung remaining days (tiga hari setelah createdAt)
+      let remainingDays = null;
+      if (req.createdAt) {
+        const created = new Date(req.createdAt);
+        const now = new Date();
+        const expire = new Date(created.getTime() + 3 * 24 * 60 * 60 * 1000);
+        const diff = Math.ceil((expire - now) / (24 * 60 * 60 * 1000));
+        remainingDays = diff > 0 ? diff : 0;
+      }
       return {
         groupId: group._id || group.id,
         namaTim: group.namaTim,
@@ -45,7 +54,8 @@ exports.getInboxRequests = async (req, res) => {
         alasan: req.alasan,
         linkcv: group.linkCVGabungan,
         createdAt: req.createdAt,
-        status: req.status
+        status: req.status,
+        remainingDays
       };
     });
     res.json({
