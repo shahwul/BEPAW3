@@ -1,16 +1,38 @@
 // Ambil semua grup dengan data lengkap
-exports.getAllGroups = async () => {
-  const groups = await Group.find()
-    .populate("ketua", "name email nim role")
-    .populate("anggota", "name email nim")
-    .populate("dosen", "name email nip");
-  return groups;
-};
 const Group = require("../models/group");
 const User = require("../models/user");
 const Capstone = require("../models/capstone");
 const Request = require("../models/request");
 const notificationService = require("./notificationService");
+
+exports.getAllGroups = async (query) => {
+  const { tema, tahun, dosen, ketua, anggota, sortBy, order } = query;
+
+  const filter = {};
+
+  // FILTER
+  if (tema) filter.tema = tema;
+  if (tahun) filter.tahun = Number(tahun);
+  if (dosen) filter.dosen = dosen;
+  if (ketua) filter.ketua = ketua;
+  if (anggota) filter.anggota = anggota;
+
+  // SORTING
+  let sortOptions = {};
+  if (sortBy) {
+    sortOptions[sortBy] = order === "asc" ? 1 : -1;
+  }
+
+  const groups = await Group.find(filter)
+    .populate("ketua", "name email nim role")
+    .populate("anggota", "name email nim")
+    .populate("dosen", "name email nip")
+    .sort(sortOptions);
+
+  // SERVICE RETURN DATA, bukan res.json
+  return groups;
+};
+
 
 exports.createGroup = async ({ tema, namaTim, tahun, ketua, anggota, dosen, linkCVGabungan}) => {
   // Validasi ketua berdasarkan ID

@@ -1,14 +1,16 @@
 // Ambil semua grup
-exports.getAllGroups = async (req, res) => {
-  try {
-    const groups = await groupService.getAllGroups();
-    res.json({ groups });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
 const groupService = require("../services/groupService");
 const { formatResponse } = require("../utils/responseFormatter");
+
+exports.getAllGroups = async (req, res) => {
+  try {
+    const groups = await groupService.getAllGroups(req.query);
+    res.json( formatResponse({groups})  );
+  } catch (err) {
+    console.error("GetAllGroups Error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 exports.createGroup = async (req, res) => {
   try {
