@@ -694,12 +694,18 @@ exports.getCapstoneRequestStats = async () => {
 
   const partiallyRequested = totalCapstones - fullyRequested - noRequests;
 
-  return {
-    totalCapstones,
-    tersedia,
-    tidakTersedia,
-    fullyRequested,
-    noRequests,
-    partiallyRequested
-  };
+    // Hitung capstone yang tidak tersedia karena sudah ada grup di-approve
+    const approvedRequests = await Request.find({ status: "Diterima" }).select('capstone');
+    const capstoneIdsWithApprovedGroup = new Set(approvedRequests.map(r => r.capstone.toString()));
+    const unavailableBecauseApproved = capstoneIdsWithApprovedGroup.size;
+
+    return {
+      totalCapstones,
+      tersedia,
+      tidakTersedia,
+      fullyRequested,
+      noRequests,
+      partiallyRequested,
+      unavailableBecauseApproved // field baru
+    };
 };
