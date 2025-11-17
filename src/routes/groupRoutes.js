@@ -31,7 +31,7 @@ router.get("/stats", auth, role(["admin"]), groupController.getGroupStats);
 router.get("/reported", auth, role(["admin"]), groupController.getReportedGroups);
 
 // Admin - resolve reported issue
-router.patch("/:id/resolve-issue", auth, role(["admin"]), groupController.resolveReportedIssue);
+router.patch("/resolve-issue", auth, role(["admin"]), groupController.resolveReportedIssue);
 
 // Mahasiswa - get my group's capstone requests
 router.get("/my-requests", auth, role(["mahasiswa"]), groupController.getMyRequests);

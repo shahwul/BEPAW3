@@ -142,16 +142,22 @@ exports.getReportedGroups = async (req, res) => {
 
 exports.resolveReportedIssue = async (req, res) => {
   try {
-    const group = await groupService.resolveReportedIssue(req.params.id);
-    res.json({ 
-      message: "Issue resolved successfully", 
+    const { groupId } = req.body;
+
+    if (!groupId) {
+      return res.status(400).json({ message: "groupId is required" });
+    }
+
+    const group = await groupService.resolveReportedIssue(groupId);
+
+    res.json({
+      message: "Issue resolved successfully",
       group: formatResponse(group)
     });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
-
 exports.getMyRequests = async (req, res) => {
   try {
     const result = await groupService.getMyRequests(req.user.id);
