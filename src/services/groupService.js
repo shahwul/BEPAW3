@@ -124,8 +124,8 @@ exports.chooseCapstone = async (groupId, capstoneId, alasan) => {
       userId: group.ketua,
       requestId : relation._id || null,
       type: "notification",
-      message: `Kelompok Anda telah memilih capstone dengan ID: ${capstoneId}. Silakan tinjau dan setujui.`,
-      data: { groupId: group._id, capstoneId}
+      message: `Kelompok Anda telah memilih capstone dengan judul ${capstone.judul}. Silakan tinjau dan setujui.`,
+      data: { groupId: group._id, capstoneId, judul: capstone.judul }
     });
   } catch (notifErr) {
     console.error("Failed to send notification to ketua:", notifErr);

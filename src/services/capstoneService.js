@@ -509,16 +509,19 @@ exports.searchCapstones = async (query, userId, userRole) => {
 
     // Determine sort order
     let sortOption = {};
-    if (query.sortBy === 'terbaru') {
-        // Sort by creation date, newest first
-        sortOption = { createdAt: -1 };
-    } else if (query.sortBy === 'judul') {
-        // Sort alphabetically by title (A-Z)
-        sortOption = { judul: 1 };
-    } else {
-        // Default: sort by newest
-        sortOption = { createdAt: -1 };
-    }
+
+    const sortField =
+      query.sortBy === "judul"
+        ? "judul"
+        : "createdAt"; // default field
+
+    const sortOrder =
+      query.order === "asc"
+        ? 1
+        : -1; // default newest
+
+    sortOption = { [sortField]: sortOrder };
+
 
     const capstones = await Capstone.find(filter)
       .sort(sortOption)
