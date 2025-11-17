@@ -158,9 +158,41 @@ exports.updateUser = async (userId, updateData) => {
   return user;
 };
 
-exports.getAllUsers = async () => {
-  return User.find().select('-password'); // Hide password field
+exports.getAllUsers = async (req, res) => {
+  try {
+    const filter = {};
+
+    // ROLE → bisa tunggal atau banyak
+    if (req.query.role) {
+      const roles = req.query.role.split(","); // "mahasiswa,alumni"
+      filter.role = { $in: roles };
+    }
+
+    // PROGRAM STUDI
+    if (req.query.prodi) {
+      filter.prodi = req.query.prodi;
+    }
+
+    // VERIFIKASI
+    if (req.query.isVerified) {
+      filter.isVerified = req.query.isVerified === "true";
+    }
+
+    // CLAIMED
+    if (req.query.isClaimed) {
+      filter.isClaimed = req.query.isClaimed === "true";
+    }
+
+    const users = await User.find(filter).select("-password");
+
+    return res.json(users);
+
+  } catch (err) {
+    console.error("Get Users Error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
 };
+
 
 exports.getUserById = async (userId) => {
   return User.findById(userId).select('-password');
