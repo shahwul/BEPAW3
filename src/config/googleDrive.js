@@ -1,13 +1,14 @@
 const { google } = require("googleapis");
-const path = require("path");
 
-const SCOPES = ["https://www.googleapis.com/auth/drive"]; //
-
-// Use environment variable for credentials path (more secure)
-const KEYFILEPATH = path.join(__dirname, "../../credentials.json");
+const SCOPES = ["https://www.googleapis.com/auth/drive"];
 
 const auth = new google.auth.GoogleAuth({
-  keyFile: KEYFILEPATH,
+  credentials: {
+    type: "service_account",
+    project_id: process.env.GOOGLE_PROJECT_ID,
+    private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    client_email: process.env.GOOGLE_CLIENT_EMAIL,
+  },
   scopes: SCOPES,
 });
 
