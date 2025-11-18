@@ -8,7 +8,7 @@ const CapstoneSchema = new mongoose.Schema({
   kategori: { 
     type: String, 
     required: true,
-    enum: ["Pengolahan Sampah", "Smart City", "Transportasi Ramah Lingkungan"]
+    enum: ["Pengolahan Sampah", "Smart City", "Transportasi Ramah Lingkungan", "Kesehatan"]
   },
   ketua: { 
     type: mongoose.Schema.Types.ObjectId, 
