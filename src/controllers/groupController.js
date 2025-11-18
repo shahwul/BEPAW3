@@ -27,6 +27,7 @@ exports.createGroup = async (req, res) => {
     res.status(201).json(formatResponse(group));
   } catch (err) {
     res.status(400).json({ message: err.message });
+    console.log(err);
   }
 };
 
