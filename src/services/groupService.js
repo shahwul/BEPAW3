@@ -63,8 +63,8 @@ exports.createGroup = async ({ tema, namaTim, tahun, ketua, anggota, dosen, link
   
   // Validasi maksimal 4 anggota total (ketua + anggota)
   const totalMembers = 1 + (anggota ? anggota.length : 0);
-  if (totalMembers > 4) {
-    throw new Error("Maximum 4 members per group (1 ketua + 3 anggota)");
+  if (totalMembers > 5) {
+    throw new Error("Maximum 5 members per group (1 ketua + 4 anggota)");
   }
 
   // Validasi dosen
