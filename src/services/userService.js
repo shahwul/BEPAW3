@@ -211,7 +211,21 @@ exports.getAllUsers = async (query) => {
   }
 
   const users = await User.find(filter).select("-password");
-  return users;
+  const Group = require("../models/group");
+  // Untuk setiap user, cek apakah sudah punya kelompok (sebagai ketua atau anggota)
+  const usersWithGroup = await Promise.all(users.map(async (user) => {
+    const hasGroup = await Group.exists({
+      $or: [
+        { ketua: user._id },
+        { anggota: user._id }
+      ]
+    });
+    // Konversi ke objek agar bisa ditambah properti
+    const userObj = user.toObject ? user.toObject() : user;
+    userObj.hasGroup = !!hasGroup;
+    return userObj;
+  }));
+  return usersWithGroup;
 };
 
 exports.getUserById = async (userId) => {
