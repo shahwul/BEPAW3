@@ -1,7 +1,7 @@
 const User = require("../models/user");
 
 // Create pre-populated user (admin only - untuk bulk import mahasiswa/alumni)
-exports.createPrePopulatedUser = async ({ email, role, name, nim, prodi }) => {
+exports.createPrePopulatedUser = async ({ email, role, name, nim, prodi, nip }) => {
   // Validasi email domain
   const isUGMMahasiswa = email.endsWith("@mail.ugm.ac.id");
   const isUGMAdmin = email.endsWith("@ugm.ac.id");
@@ -31,6 +31,13 @@ exports.createPrePopulatedUser = async ({ email, role, name, nim, prodi }) => {
       throw new Error("NIM sudah digunakan");
     }
   }
+  // Validasi NIP jika ada dan role dosen
+  if (role === "dosen" && nip) {
+    const existingNip = await User.findOne({ nip });
+    if (existingNip) {
+      throw new Error("NIP sudah digunakan");
+    }
+  }
 
   // Buat user tanpa password (akan di-set saat user register)
   const userData = {
@@ -46,6 +53,10 @@ exports.createPrePopulatedUser = async ({ email, role, name, nim, prodi }) => {
   if (["mahasiswa", "alumni"].includes(role)) {
     if (nim) userData.nim = nim;
     if (prodi) userData.prodi = prodi;
+  }
+  // Tambahkan nip jika role dosen
+  if (role === "dosen" && nip) {
+    userData.nip = nip;
   }
 
   const user = new User(userData);
@@ -106,7 +117,6 @@ exports.updateUser = async (userId, updateData) => {
 
   // Update NIM jika ada (hanya untuk mahasiswa)
   if (updateData.nim !== undefined) {
-    // Cek apakah NIM sudah dipakai user lain
     const existingNim = await User.findOne({ 
       nim: updateData.nim,
       _id: { $ne: userId }
@@ -115,6 +125,17 @@ exports.updateUser = async (userId, updateData) => {
       throw new Error("NIM sudah digunakan oleh user lain");
     }
     user.nim = updateData.nim;
+  }
+  // Update NIP jika ada (hanya untuk dosen)
+  if (updateData.nip !== undefined && user.role === "dosen") {
+    const existingNip = await User.findOne({ 
+      nip: updateData.nip,
+      _id: { $ne: userId }
+    });
+    if (existingNip) {
+      throw new Error("NIP sudah digunakan oleh user lain");
+    }
+    user.nip = updateData.nip;
   }
 
   // Update prodi jika ada

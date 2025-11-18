@@ -21,6 +21,11 @@ const UserSchema = new mongoose.Schema({
   prodi: { 
     type: String
   },
+  // Dosen-specific field
+  nip: {
+    type: String,
+    sparse: true // Allow null, but unique if provided
+  },
   otp: { type: String },
   otpExpiry: { type: Date },
   isVerified: { type: Boolean, default: false },
