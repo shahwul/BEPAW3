@@ -23,6 +23,10 @@ const createPrePopulatedUser = async (req, res) => {
       if (user.nim) response.user.nim = user.nim;
       if (user.prodi) response.user.prodi = user.prodi;
     }
+    // Include nip if dosen
+    if (user.role === "dosen" && user.nip) {
+      response.user.nip = user.nip;
+    }
 
     res.status(201).json(response);
   } catch (err) {

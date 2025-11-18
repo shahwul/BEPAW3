@@ -25,7 +25,6 @@ const formatSingleDoc = (doc) => {
       formatted.id = obj[key];
     } else if (obj[key] && typeof obj[key] === 'object') {
       if (Array.isArray(obj[key])) {
-        // Handle arrays of objects
         formatted[key] = obj[key].map(item => {
           if (item && typeof item === 'object' && item._id) {
             return formatSingleDoc(item);
@@ -33,7 +32,6 @@ const formatSingleDoc = (doc) => {
           return item;
         });
       } else if (obj[key]._id) {
-        // Handle nested populated objects
         formatted[key] = formatSingleDoc(obj[key]);
       } else {
         formatted[key] = obj[key];
@@ -41,6 +39,10 @@ const formatSingleDoc = (doc) => {
     } else {
       formatted[key] = obj[key];
     }
+  }
+  // Tambahkan nip jika role dosen
+  if (obj.role === "dosen" && obj.nip) {
+    formatted.nip = obj.nip;
   }
   
   return formatted;
