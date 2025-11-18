@@ -292,8 +292,8 @@ exports.updateGroup = async (groupId, updateData) => {
     
     // Validasi maksimal 4 anggota total (ketua + anggota)
     const totalMembers = 1 + updateData.anggota.length;
-    if (totalMembers > 4) {
-      throw new Error("Maximum 4 members per group (1 ketua + 3 anggota)");
+    if (totalMembers > 5) {
+      throw new Error("Maximum 5 members per group (1 ketua + 4 anggota)");
     }
 
     group.anggota = updateData.anggota;
