@@ -15,7 +15,6 @@ Capstone Container adalah aplikasi manajemen proyek capstone berbasis web yang m
 - Raudha Nur Hidayatullah Susanto (22/500044/TK/54789)
 - Muhammad Haidar Syaafi' (23/521614/TK/57545)
 - Syahrul Afif Tri Anggara (23/518266/TK/57027)
-*(Silakan lengkapi nama anggota sesuai tim Anda)*
 
 ## Fitur Utama
 
