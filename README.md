@@ -150,3 +150,7 @@ Capstone Container adalah aplikasi manajemen proyek capstone berbasis web yang m
 ## URL Deploy
 
 [capcon-api.vercel.app](https://capcon-api.vercel.app)
+
+## URL Presentasi
+
+[Video Presentasi](https://drive.google.com/file/d/1jmTTuXSn76P5DnsQeBD6zPDwrHYTjGjf/view?usp=drivesdk)
